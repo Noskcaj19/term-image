@@ -1,0 +1,163 @@
+#![feature(iterator_step_by)]
+
+extern crate clap;
+#[macro_use]
+extern crate failure;
+extern crate image;
+extern crate termion;
+
+use image::FilterType;
+
+mod options;
+mod unicode_block;
+mod utils;
+
+use unicode_block::DrawMode;
+
+fn get_options() -> options::Options {
+    use clap::{App, Arg};
+    let matches = App::new("Terminal Image Viewer")
+        .author("Noskcaj")
+        .about("Shows images in your terminal")
+        .arg(
+            Arg::with_name("file_format_arg")
+                .takes_value(true)
+                .value_name("file_format")
+                .short("t")
+                .possible_values(&["jpg", "jpeg", "png", "gif", "ico"])
+                .help("Sets the image type"),
+        )
+        .arg(
+            Arg::with_name("256_colors")
+                .long("256")
+                .help("Use only 256 colors"),
+        )
+        .arg(
+            Arg::with_name("no_blending")
+                .long("noblend")
+                .short("b")
+                .help("Disable blending characters"),
+        )
+        .arg(
+            Arg::with_name("all")
+                .long("all")
+                .help("Use all unicode drawing characters")
+                .conflicts_with_all(&["no_slopes", "only_blocks", "only_halfs"]),
+        )
+        .arg(
+            Arg::with_name("no_slopes")
+                .long("noslopes")
+                .help("Disable angled unicode character (if they are wide in your font)")
+                .conflicts_with_all(&["all", "only_blocks", "only_halfs"]),
+        )
+        .arg(
+            Arg::with_name("only_blocks")
+                .long("blocks")
+                .help("Only use unicode block characters")
+                .conflicts_with_all(&["all", "no_slopes", "only_halfs"]),
+        )
+        .arg(
+            Arg::with_name("only_halfs")
+                .long("halfs")
+                .help("Only use unicode half blocks")
+                .conflicts_with_all(&["all", "no_slopes", "only_blocks"]),
+        )
+        .arg(
+            Arg::with_name("width")
+                .long("width")
+                .short("w")
+                .takes_value(true)
+                .help("Override max display width (maintains aspect ratio)"),
+        )
+        .arg(
+            Arg::with_name("height")
+                .long("height")
+                .short("h")
+                .takes_value(true)
+                .help("Override max display height"),
+        )
+        .arg(
+            Arg::with_name("force_tty")
+                .long("force-tty")
+                .help("Don't detect tty"),
+        )
+        .arg(Arg::with_name("file_name").required(true))
+        .get_matches();
+
+    let mut options = options::Options::new();
+
+    if let Some(format) = matches.value_of("file_format_arg") {
+        options.auto_detect_format = false;
+        use image::ImageFormat;
+        options.image_format = match format.to_lowercase().as_str() {
+            "jpg" | "jpeg" => Some(ImageFormat::JPEG),
+            "png" => Some(ImageFormat::PNG),
+            "gif" => Some(ImageFormat::GIF),
+            "ico" => Some(ImageFormat::ICO),
+            _ => panic!("Invalid image format in match"),
+        }
+    }
+
+    options.ansi_256_color = matches.is_present("256_colors");
+    options.file_name = matches.value_of("file_name").map(str::to_string);
+    options.blend = !matches.is_present("no_blending");
+    options.ignore_tty = matches.is_present("force_tty");
+    options.width = matches
+        .value_of("width")
+        .map(str::to_string)
+        .and_then(|w| w.parse().ok());
+    options.height = matches
+        .value_of("height")
+        .map(str::to_string)
+        .and_then(|h| h.parse().ok());
+
+    if matches.is_present("no_slopes") {
+        options.draw_mode = DrawMode::NoSlopes;
+    } else if matches.is_present("only_blocks") {
+        options.draw_mode = DrawMode::Blocks;
+    } else if matches.is_present("only_halfs") {
+        options.draw_mode = DrawMode::Halfs;
+    }
+
+    options
+}
+
+fn main() {
+    let options = get_options();
+
+    if !options.ignore_tty && !options.width.is_some() && !options.width.is_some() {
+        if !termion::is_tty(&std::fs::File::create("/dev/stdout").unwrap()) {
+            return;
+        }
+    }
+
+    let term_size = if options.width.is_some() || options.width.is_some() {
+        (
+            options.width.unwrap_or(std::usize::MAX) as u16,
+            options.width.unwrap_or(std::usize::MAX) as u16,
+        )
+    } else if options.ignore_tty {
+        (80, 25)
+    } else {
+        match termion::terminal_size() {
+            Ok(size) => (size.0 - 4, size.1 - 8),
+            Err(_) => return,
+        }
+    };
+
+    let img = match utils::load_image(&options) {
+        Some(img) => img,
+        None => {
+            eprintln!("Error: Unable to open file for reading");
+            return;
+        }
+    };
+
+    let img = img.resize(
+        (term_size.0 as u32) * 4,
+        (term_size.1 as u32) * 8,
+        FilterType::Nearest,
+    );
+
+    unicode_block::print_image(&options, img);
+}
