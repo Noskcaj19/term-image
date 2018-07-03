@@ -13,3 +13,6 @@ Supports many display options, including:
 * Unicode half blocks only
 * Unicode block characters only
 * Many unicode block and drawing characters to create a somewhat accurate image
+
+## Gifs
+![gif](https://i.imgur.com/UNputum.png)
