@@ -2,7 +2,7 @@
 
 <small>(working name)</small>
 
-Show high resolution images in your terminal using unicode and truecolor.
+Show high resolution images and gifs in your terminal using unicode and truecolor.
 
 ![Big Example](https://i.imgur.com/hOMUaj2.png)
 
