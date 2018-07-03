@@ -143,10 +143,10 @@ fn main() {
         }
     }
 
-    let term_size = if options.width.is_some() || options.width.is_some() {
+    let term_size = if options.width.is_some() || options.height.is_some() {
         (
             options.width.unwrap_or(std::usize::MAX) as u16,
-            options.width.unwrap_or(std::usize::MAX) as u16,
+            options.height.unwrap_or(std::usize::MAX) as u16,
         )
     } else if options.ignore_tty {
         (80, 25)
