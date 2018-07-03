@@ -14,6 +14,8 @@ pub struct Options {
     // Unicode block
     pub draw_mode: DrawMode,
     pub blend: bool,
+    // GIF
+    pub animated: bool,
 }
 
 impl Options {
@@ -28,6 +30,7 @@ impl Options {
             height: None,
             draw_mode: Default::default(),
             blend: true,
+            animated: true,
         }
     }
 }

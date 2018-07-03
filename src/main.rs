@@ -79,6 +79,12 @@ fn get_options() -> options::Options {
                 .long("force-tty")
                 .help("Don't detect tty"),
         )
+        .arg(
+            Arg::with_name("still")
+                .long("still")
+                .short("s")
+                .help("Don't animate images"),
+        )
         .arg(Arg::with_name("file_name").required(true))
         .get_matches();
 
@@ -88,6 +94,7 @@ fn get_options() -> options::Options {
     options.file_name = matches.value_of("file_name").map(str::to_string);
     options.blend = !matches.is_present("no_blending");
     options.ignore_tty = matches.is_present("force_tty");
+    options.animated = !matches.is_present("still");
     options.width = matches
         .value_of("width")
         .map(str::to_string)
@@ -151,7 +158,7 @@ fn main() {
     };
 
     match options.image_format {
-        Some(image::ImageFormat::GIF) => {
+        Some(image::ImageFormat::GIF) if options.animated => {
             let f =
                 std::fs::File::open(options.file_name.clone().unwrap()).expect("File not found");
 
