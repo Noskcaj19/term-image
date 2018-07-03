@@ -11,6 +11,7 @@ pub struct Options {
     pub ignore_tty: bool,
     pub width: Option<usize>,
     pub height: Option<usize>,
+    pub magic: bool,
     // Unicode block
     pub draw_mode: DrawMode,
     pub blend: bool,
@@ -28,6 +29,7 @@ impl Options {
             ignore_tty: false,
             width: None,
             height: None,
+            magic: true,
             draw_mode: Default::default(),
             blend: true,
             animated: true,

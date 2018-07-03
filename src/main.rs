@@ -2,15 +2,20 @@
 
 extern crate clap;
 extern crate failure;
+extern crate gif;
 extern crate image;
+extern crate iterm2;
 extern crate termion;
 
+mod iterm;
 mod options;
 mod unicode_block;
 mod utils;
 
 use image::ImageFormat;
 use unicode_block::DrawMode;
+
+use std::env;
 
 fn get_options() -> options::Options {
     use clap::{App, Arg};
@@ -85,6 +90,12 @@ fn get_options() -> options::Options {
                 .short("s")
                 .help("Don't animate images"),
         )
+        .arg(
+            Arg::with_name("no_magic")
+                .long("no-magic")
+                .short("m")
+                .help("Disable high-def rendering magic"),
+        )
         .arg(Arg::with_name("file_name").required(true))
         .get_matches();
 
@@ -95,6 +106,7 @@ fn get_options() -> options::Options {
     options.blend = !matches.is_present("no_blending");
     options.ignore_tty = matches.is_present("force_tty");
     options.animated = !matches.is_present("still");
+    options.magic = !matches.is_present("no_magic");
     options.width = matches
         .value_of("width")
         .map(str::to_string)
@@ -157,10 +169,20 @@ fn main() {
         }
     };
 
+    let file_name = &options.file_name.clone().unwrap();
+
+    if options.magic {
+        if let Ok(prog) = env::var("TERM_PROGRAM") {
+            if prog == "iTerm.app" {
+                iterm::display(&options, &file_name).unwrap();
+                return;
+            }
+        }
+    }
+
     match options.image_format {
         Some(image::ImageFormat::GIF) if options.animated => {
-            let f =
-                std::fs::File::open(options.file_name.clone().unwrap()).expect("File not found");
+            let f = std::fs::File::open(&file_name).expect("File not found");
 
             let decoder = image::gif::Decoder::new(f);
             use image::ImageDecoder;
