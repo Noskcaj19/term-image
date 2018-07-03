@@ -222,9 +222,17 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
         frame_data.push((img_data, delay));
     }
 
-    println!("{}", termion::clear::All);
+    println!("{}{}", termion::clear::All, termion::cursor::Hide);
 
-    loop {
+    use libc;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::Arc;
+    let term = Arc::new(AtomicBool::new(false));
+    for signal in &[libc::SIGINT, libc::SIGQUIT, libc::SIGTERM] {
+        ::signal_hook::flag::register(*signal, Arc::clone(&term)).expect("Unable to hook SIGINT");
+    }
+
+    'gif: loop {
         for (frame, delay) in &frame_data {
             println!("{}", termion::cursor::Goto(1, 1));
             for line in frame {
@@ -233,7 +241,11 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
                 }
                 println!("{}{}", Fg(color::Reset), Bg(color::Reset));
             }
-            thread::sleep(Duration::from_millis(*delay))
+            thread::sleep(Duration::from_millis(*delay));
+            if term.load(Ordering::Relaxed) {
+                println!("{}", termion::cursor::Show);
+                break 'gif;
+            }
         }
     }
 }

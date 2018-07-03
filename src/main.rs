@@ -5,6 +5,8 @@ extern crate failure;
 extern crate gif;
 extern crate image;
 extern crate iterm2;
+extern crate libc;
+extern crate signal_hook;
 extern crate termion;
 
 mod iterm;
