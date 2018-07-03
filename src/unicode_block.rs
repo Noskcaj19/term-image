@@ -1,6 +1,8 @@
-use image::{DynamicImage, FilterType, GenericImage, Rgba};
+use image::{DynamicImage, FilterType, Frames, GenericImage, Rgba};
 use options::Options;
-use std::fmt;
+use std::time::Duration;
+use std::{fmt, thread};
+use termion;
 use termion::color::{self, Bg, Fg, Rgb};
 
 use utils;
@@ -150,19 +152,33 @@ fn process_block(
     }
 }
 
-pub fn print_image(options: &Options, img: DynamicImage) {
-    let mut img = img.resize_exact(
-        utils::closest_mult(img.width(), 4),
-        utils::closest_mult(img.height(), 8),
-        FilterType::Nearest,
-    );
-
-    let bitmap = match options.draw_mode {
+fn get_bitmap(draw_mode: DrawMode) -> Vec<(u32, char)> {
+    match draw_mode {
         DrawMode::All => BITMAPS.to_vec(),
         DrawMode::Blocks => BITMAPS_BLOCKS.to_vec(),
         DrawMode::Halfs => BITMAPS_HALFS.to_vec(),
         DrawMode::NoSlopes => BITMAPS_NO_SLOPES.to_vec(),
-    };
+    }
+}
+
+fn resize_image(img: &DynamicImage, max_size: (u16, u16)) -> DynamicImage {
+    let img = img.resize(
+        (max_size.0 as u32) * 4,
+        (max_size.1 as u32) * 8,
+        FilterType::Nearest,
+    );
+
+    img.resize_exact(
+        utils::closest_mult(img.width(), 4),
+        utils::closest_mult(img.height(), 8),
+        FilterType::Nearest,
+    )
+}
+
+pub fn print_image(options: &Options, max_size: (u16, u16), img: &DynamicImage) {
+    let mut img = resize_image(img, max_size);
+
+    let bitmap = get_bitmap(options.draw_mode);
 
     for y in (0..img.height()).step_by(8) {
         for x in (0..img.width()).step_by(4) {
@@ -173,6 +189,52 @@ pub fn print_image(options: &Options, img: DynamicImage) {
             );
         }
         println!("{}{}", Fg(color::Reset), Bg(color::Reset));
+    }
+}
+
+pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
+    let bitmap = get_bitmap(options.draw_mode);
+
+    let mut frame_data = Vec::new();
+    for frame in frames {
+        let delay = frame.delay().to_integer() as u64;
+        let mut image = frame.into_buffer();
+        let image = DynamicImage::ImageRgba8(image.clone());
+
+        let mut image = resize_image(&image, max_size);
+
+        let mut img_data = Vec::new();
+
+        for y in (0..image.height()).step_by(8) {
+            let mut inner = Vec::new();
+            for x in (0..image.width()).step_by(4) {
+                let sub_img = image.sub_image(x, y, 4, 8);
+                inner.push(process_block(
+                    &sub_img,
+                    &bitmap,
+                    options.blend,
+                    !options.ansi_256_color,
+                ));
+            }
+            img_data.push(inner);
+        }
+
+        frame_data.push((img_data, delay));
+    }
+
+    println!("{}", termion::clear::All);
+
+    loop {
+        for (frame, delay) in &frame_data {
+            println!("{}", termion::cursor::Goto(1, 1));
+            for line in frame {
+                for block in line {
+                    print!("{:?}", block);
+                }
+                println!("{}{}", Fg(color::Reset), Bg(color::Reset));
+            }
+            thread::sleep(Duration::from_millis(*delay))
+        }
     }
 }
 

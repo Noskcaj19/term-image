@@ -1,17 +1,15 @@
 #![feature(iterator_step_by)]
 
 extern crate clap;
-#[macro_use]
 extern crate failure;
 extern crate image;
 extern crate termion;
-
-use image::FilterType;
 
 mod options;
 mod unicode_block;
 mod utils;
 
+use image::ImageFormat;
 use unicode_block::DrawMode;
 
 fn get_options() -> options::Options {
@@ -86,18 +84,6 @@ fn get_options() -> options::Options {
 
     let mut options = options::Options::new();
 
-    if let Some(format) = matches.value_of("file_format_arg") {
-        options.auto_detect_format = false;
-        use image::ImageFormat;
-        options.image_format = match format.to_lowercase().as_str() {
-            "jpg" | "jpeg" => Some(ImageFormat::JPEG),
-            "png" => Some(ImageFormat::PNG),
-            "gif" => Some(ImageFormat::GIF),
-            "ico" => Some(ImageFormat::ICO),
-            _ => panic!("Invalid image format in match"),
-        }
-    }
-
     options.ansi_256_color = matches.is_present("256_colors");
     options.file_name = matches.value_of("file_name").map(str::to_string);
     options.blend = !matches.is_present("no_blending");
@@ -110,6 +96,25 @@ fn get_options() -> options::Options {
         .value_of("height")
         .map(str::to_string)
         .and_then(|h| h.parse().ok());
+
+    if let Some(name) = &options.file_name {
+        if options.auto_detect_format {
+            if name.ends_with(".gif") {
+                options.image_format = Some(ImageFormat::GIF)
+            }
+        }
+    }
+
+    if let Some(format) = matches.value_of("file_format_arg") {
+        options.auto_detect_format = false;
+        options.image_format = match format.to_lowercase().as_str() {
+            "jpg" | "jpeg" => Some(ImageFormat::JPEG),
+            "png" => Some(ImageFormat::PNG),
+            "gif" => Some(ImageFormat::GIF),
+            "ico" => Some(ImageFormat::ICO),
+            _ => panic!("Invalid image format in match"),
+        }
+    }
 
     if matches.is_present("no_slopes") {
         options.draw_mode = DrawMode::NoSlopes;
@@ -145,19 +150,26 @@ fn main() {
         }
     };
 
-    let img = match utils::load_image(&options) {
-        Some(img) => img,
-        None => {
-            eprintln!("Error: Unable to open file for reading");
-            return;
+    match options.image_format {
+        Some(image::ImageFormat::GIF) => {
+            let f =
+                std::fs::File::open(options.file_name.clone().unwrap()).expect("File not found");
+
+            let decoder = image::gif::Decoder::new(f);
+            use image::ImageDecoder;
+            let frames = decoder.into_frames().expect("error decoding gif");
+            unicode_block::print_frames(&options, term_size, frames);
         }
-    };
+        _ => {
+            let img = match utils::load_image(&options) {
+                Some(img) => img,
+                None => {
+                    eprintln!("Error: Unable to open file for reading");
+                    return;
+                }
+            };
 
-    let img = img.resize(
-        (term_size.0 as u32) * 4,
-        (term_size.1 as u32) * 8,
-        FilterType::Nearest,
-    );
-
-    unicode_block::print_image(&options, img);
+            unicode_block::print_image(&options, term_size, &img);
+        }
+    }
 }
