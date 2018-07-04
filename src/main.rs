@@ -176,7 +176,7 @@ fn main() {
     if options.magic {
         if let Ok(prog) = env::var("TERM_PROGRAM") {
             if prog == "iTerm.app" {
-                iterm::display(&options, &file_name).unwrap();
+                iterm::display(&options, term_size, &file_name).unwrap();
                 return;
             }
         }
