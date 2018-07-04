@@ -4,7 +4,7 @@ use iterm2;
 use std::fs::File;
 use std::io::{self, Read};
 
-use options::Options;
+use Options;
 
 pub fn display(options: &Options, max_size: (u16, u16), path: &str) -> io::Result<()> {
     match options.image_format {

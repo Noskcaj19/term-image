@@ -1,9 +1,9 @@
-use image::{DynamicImage, FilterType, Frames, GenericImage, Rgba};
-use options::Options;
+use image::{DynamicImage, Frames, GenericImage, Rgba};
+use std::thread;
 use std::time::Duration;
-use std::{fmt, thread};
 use termion;
 use termion::color::{self, Bg, Fg, Rgb};
+use Options;
 
 use utils;
 
@@ -23,33 +23,32 @@ impl Default for DrawMode {
 
 struct Block {
     ch: char,
-    truecolor: bool,
     fg: Fg<Rgb>,
     bg: Bg<Rgb>,
 }
 
-impl fmt::Debug for Block {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.truecolor {
-            write!(f, "{}{}{}", self.fg, self.bg, self.ch)
-        } else {
-            write!(
-                f,
-                "{}{}{}",
-                Fg(utils::rgb_to_ansi(self.fg.0)),
-                Bg(utils::rgb_to_ansi(self.bg.0)),
-                self.ch
-            )
-        }
+impl Block {
+    pub fn print_truecolor(&self) {
+        print!("{}{}{}", self.fg, self.bg, self.ch)
+    }
+
+    pub fn print_ansi(&self) {
+        print!(
+            "{}{}{}",
+            Fg(utils::rgb_to_ansi(self.fg.0)),
+            Bg(utils::rgb_to_ansi(self.bg.0)),
+            self.ch
+        )
     }
 }
 
 fn process_block(
     sub_img: &impl GenericImage<Pixel = Rgba<u8>>,
     bitmaps: &[(u32, char)],
-    use_blend: bool,
-    truecolor: bool,
+    blend: bool,
 ) -> Block {
+    // Determine the best color
+    // First, determine the best color range
     let mut max = [0u8; 3];
     let mut min = [255u8; 3];
     for (_, _, p) in sub_img.pixels() {
@@ -71,6 +70,8 @@ fn process_block(
 
     let split_value = min[split_index] + best_split / 2;
 
+    // Then use the median of the range to find the average of the forground and background
+    // The median value is used to convert the 4x8 image to a bitmap
     let mut fg_count = 0;
     let mut bg_count = 0;
     let mut fg_color = [0u32; 3];
@@ -96,6 +97,7 @@ fn process_block(
         }
     }
 
+    // Get the averages
     for i in 0..3 {
         if fg_count != 0 {
             fg_color[i] /= fg_count;
@@ -106,26 +108,31 @@ fn process_block(
         }
     }
 
+    // A perfect match is 0x0 so start at max
     let mut best_diff = 0xffffffffu32;
     let mut best_char = ' ';
+    // The best match may be inverted
     let mut invert = false;
 
-    for (bitmap, char) in bitmaps.iter() {
+    // Determine the difference between the calculated bitmap and the character map
+    for (bitmap, ch) in bitmaps.iter() {
         let diff = (bitmap ^ bits).count_ones();
         if diff < best_diff {
             best_diff = diff;
-            best_char = *char;
+            best_char = *ch;
             invert = false
         }
+        // Check the inverted bitmap
         let inverted_diff = (!bitmap ^ bits).count_ones();
         if inverted_diff < best_diff {
             best_diff = inverted_diff;
-            best_char = *char;
+            best_char = *ch;
             invert = true;
         }
     }
 
-    if use_blend {
+    if blend {
+        // If the bitmap does not fit "well", use a gradient,w
         if best_diff > 10 {
             invert = false;
             best_char = [' ', '\u{2591}', '\u{2592}', '\u{2593}', '\u{2588}']
@@ -133,13 +140,13 @@ fn process_block(
         }
     }
 
+    // If best map is inverted, swap the colors
     if invert {
         ::std::mem::swap(&mut fg_color, &mut bg_color);
     }
 
     Block {
         ch: best_char,
-        truecolor,
         fg: Fg(Rgb(fg_color[0] as u8, fg_color[1] as u8, fg_color[2] as u8)),
         bg: Bg(Rgb(bg_color[0] as u8, bg_color[1] as u8, bg_color[2] as u8)),
     }
@@ -155,17 +162,20 @@ fn get_bitmap(draw_mode: DrawMode) -> Vec<(u32, char)> {
 }
 
 pub fn print_image(options: &Options, max_size: (u16, u16), img: &DynamicImage) {
-    let mut img = utils::resize_image(img, 4, 8, max_size);
+    let mut img = utils::resize_image(img, (4, 8), max_size);
 
     let bitmap = get_bitmap(options.draw_mode);
 
     for y in (0..img.height()).step_by(8) {
         for x in (0..img.width()).step_by(4) {
             let sub_img = img.sub_image(x, y, 4, 8);
-            print!(
-                "{:?}",
-                process_block(&sub_img, &bitmap, options.blend, !options.ansi_256_color)
-            );
+            let block = process_block(&sub_img, &bitmap, options.blend);
+
+            if options.truecolor {
+                block.print_truecolor();
+            } else {
+                block.print_ansi();
+            }
         }
         println!("{}{}", Fg(color::Reset), Bg(color::Reset));
     }
@@ -180,7 +190,7 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
         let mut image = frame.into_buffer();
         let image = DynamicImage::ImageRgba8(image.clone());
 
-        let mut image = utils::resize_image(&image, 4, 8, max_size);
+        let mut image = utils::resize_image(&image, (4, 8), max_size);
 
         let mut img_data = Vec::new();
 
@@ -188,12 +198,7 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
             let mut inner = Vec::new();
             for x in (0..image.width()).step_by(4) {
                 let sub_img = image.sub_image(x, y, 4, 8);
-                inner.push(process_block(
-                    &sub_img,
-                    &bitmap,
-                    options.blend,
-                    !options.ansi_256_color,
-                ));
+                inner.push(process_block(&sub_img, &bitmap, options.blend));
             }
             img_data.push(inner);
         }
@@ -216,7 +221,11 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
             println!("{}", termion::cursor::Goto(1, 1));
             for line in frame {
                 for block in line {
-                    print!("{:?}", block);
+                    if options.truecolor {
+                        block.print_truecolor();
+                    } else {
+                        block.print_ansi();
+                    }
                 }
                 println!("{}{}", Fg(color::Reset), Bg(color::Reset));
             }

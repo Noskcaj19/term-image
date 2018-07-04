@@ -1,9 +1,8 @@
-use options::Options;
 use utils;
+use Options;
 
 use image::imageops::colorops::{self, BiLevel};
 use image::{DynamicImage, Frames, GenericImage, Luma, Rgba};
-use std::fmt;
 use std::thread;
 use std::time::Duration;
 use termion;
@@ -14,13 +13,13 @@ struct Block {
     fg: Fg<Rgb>,
 }
 
-impl fmt::Debug for Block {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if f.alternate() {
-            write!(f, "{}{}", Fg(utils::rgb_to_ansi(self.fg.0)), self.ch)
-        } else {
-            write!(f, "{}{}", self.fg, self.ch)
-        }
+impl Block {
+    pub fn print_truecolor(&self) {
+        print!("{}{}", self.fg, self.ch);
+    }
+
+    pub fn print_ansi(&self) {
+        print!("{}{}", Fg(utils::rgb_to_ansi(self.fg.0)), self.ch)
     }
 }
 
@@ -38,10 +37,13 @@ fn process_block(
     sub_mono_img: &impl GenericImage<Pixel = Luma<u8>>,
 ) -> Block {
     let mut data = [0; 8];
+    // Map each mono pixel to a single braille dot
     for (x, y, p) in sub_mono_img.pixels() {
         data[((y * 2) + x) as usize] = if p[0] == 0 { 0 } else { 1 }
     }
 
+    // Determine the best color
+    // First, determine the best color range
     let mut max = [0u8; 3];
     let mut min = [255u8; 3];
     for (_, _, p) in sub_img.pixels() {
@@ -63,6 +65,7 @@ fn process_block(
 
     let split_value = min[split_index] + best_split / 2;
 
+    // Then use the median of the range to find the average of the forground
     let mut fg_count = 0;
     let mut fg_color = [0u32; 3];
 
@@ -78,6 +81,7 @@ fn process_block(
         }
     }
 
+    // Get the average
     for i in 0..3 {
         if fg_count != 0 {
             fg_color[i] /= fg_count;
@@ -91,7 +95,7 @@ fn process_block(
 }
 
 pub fn display(options: &Options, max_size: (u16, u16), img: &DynamicImage) {
-    let mut img = utils::resize_image(img, 2, 4, max_size);
+    let mut img = utils::resize_image(img, (2, 4), max_size);
 
     let mut mono = img.to_luma();
     let map = BiLevel;
@@ -100,14 +104,15 @@ pub fn display(options: &Options, max_size: (u16, u16), img: &DynamicImage) {
 
     for y in (0..img.height()).step_by(4) {
         for x in (0..img.width()).step_by(2) {
+            // `sub_image()` is a cheap reference
             let sub_img = img.sub_image(x, y, 2, 4);
             let sub_mono_img = mono.sub_image(x, y, 2, 4);
 
             let block = process_block(&sub_img, &sub_mono_img);
-            if options.ansi_256_color {
-                print!("{:#?}", block);
+            if !options.truecolor {
+                block.print_truecolor();
             } else {
-                print!("{:?}", block);
+                block.print_ansi();
             }
         }
         println!();
@@ -121,11 +126,12 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
         let mut image = frame.into_buffer();
         let image = DynamicImage::ImageRgba8(image.clone());
 
-        let mut image = utils::resize_image(&image, 2, 4, max_size);
+        let mut image = utils::resize_image(&image, (2, 4), max_size);
 
         let mut mono = image.to_luma();
         let map = BiLevel;
 
+        // Dither with Floyd-Steinberg
         colorops::dither(&mut mono, &map);
 
         let mut img_data = Vec::new();
@@ -158,10 +164,10 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
             println!("{}", termion::cursor::Goto(1, 1));
             for line in frame {
                 for block in line {
-                    if options.ansi_256_color {
-                        print!("{:#?}", block);
+                    if options.truecolor {
+                        block.print_truecolor();
                     } else {
-                        print!("{:?}", block);
+                        block.print_ansi();
                     }
                 }
                 println!("{}{}", Fg(color::Reset), Bg(color::Reset));

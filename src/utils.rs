@@ -1,9 +1,9 @@
 use image;
 use image::GenericImage;
 use image::{DynamicImage, FilterType};
-use options::Options;
 use std::{fs::File, io::BufReader};
 use termion::color;
+use Options;
 
 pub fn closest_mult(x: u32, base: u32) -> u32 {
     base * ((x as f32) / base as f32).round() as u32
@@ -23,19 +23,18 @@ pub fn load_image(options: &Options) -> Option<image::DynamicImage> {
 
 pub fn resize_image(
     img: &DynamicImage,
-    width: u32,
-    height: u32,
+    cell_size: (u32, u32),
     max_size: (u16, u16),
 ) -> DynamicImage {
     let img = img.resize(
-        (max_size.0 as u32) * width,
-        (max_size.1 as u32) * height,
+        (max_size.0 as u32) * cell_size.0,
+        (max_size.1 as u32) * cell_size.1,
         FilterType::Nearest,
     );
 
     img.resize_exact(
-        closest_mult(img.width(), width),
-        closest_mult(img.height(), height),
+        closest_mult(img.width(), cell_size.0),
+        closest_mult(img.height(), cell_size.1),
         FilterType::Nearest,
     )
 }
