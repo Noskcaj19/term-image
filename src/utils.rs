@@ -10,15 +10,23 @@ pub fn closest_mult(x: u32, base: u32) -> u32 {
 }
 
 pub fn load_image(options: &Options) -> Option<image::DynamicImage> {
-    Some(if options.auto_detect_format {
-        image::open(options.file_name.clone()?).ok()?
+    if options.file_name == Some("-".to_owned()) {
+        // Read stdin
+        use std::io::{stdin, Read};
+        let mut buf = Vec::new();
+        stdin().read_to_end(&mut buf).ok()?;
+        image::load_from_memory(&buf).ok()
     } else {
-        // TODO: Huge release mode compile time increase
-        let file = File::open(options.file_name.clone()?).ok()?;
-        let buf = BufReader::new(file);
-        image::load(buf, options.image_format?).ok()?
-        // panic!("Disabled")
-    })
+        if options.auto_detect_format {
+            Some(image::open(options.file_name.clone()?).ok()?)
+        } else {
+            // TODO: Huge release mode compile time increase
+            let file = File::open(options.file_name.clone()?).ok()?;
+            let buf = BufReader::new(file);
+            Some(image::load(buf, options.image_format?).ok()?)
+            // panic!("Disabled")
+        }
+    }
 }
 
 pub fn resize_image(
