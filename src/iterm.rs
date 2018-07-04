@@ -1,5 +1,4 @@
 use gif::{Decoder, Encoder};
-use image::ImageFormat;
 use iterm2;
 use std::fs::File;
 use std::io::{self, Read};

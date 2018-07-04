@@ -1,6 +1,6 @@
 use clap::{App, Arg};
-use image::ImageFormat;
-use options::{DrawStyle, Options};
+use options::{DrawStyle, MagicType, Options};
+use std::env;
 use unicode_block::CharSet;
 
 pub fn get_options() -> Options {
@@ -118,6 +118,12 @@ pub fn get_options() -> Options {
         options.char_set = CharSet::Blocks;
     } else if matches.is_present("only_halfs") {
         options.char_set = CharSet::Halfs;
+    }
+
+    if let Ok(prog) = env::var("TERM_PROGRAM") {
+        if prog == "iTerm.app" {
+            options.magic_type = Some(MagicType::Iterm)
+        }
     }
 
     options

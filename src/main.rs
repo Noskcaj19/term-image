@@ -14,11 +14,9 @@ mod braille;
 mod iterm;
 mod options;
 use options::DrawStyle;
-pub use options::Options;
+pub use options::*;
 mod unicode_block;
 mod utils;
-
-use std::env;
 
 fn main() {
     let options = args::get_options();
@@ -45,25 +43,28 @@ fn main() {
 
     let file_name = &options.file_name.clone().unwrap();
 
-    if options.draw_style == DrawStyle::Magic {
-        if let Ok(prog) = env::var("TERM_PROGRAM") {
-            if prog == "iTerm.app" {
-                iterm::display(&options, term_size, &file_name).unwrap();
-                return;
-            }
-        }
-    }
-
     if file_name.ends_with(".gif") && options.animated {
         let f = std::fs::File::open(&file_name).expect("File not found");
 
         let decoder = image::gif::Decoder::new(f);
         use image::ImageDecoder;
         let frames = decoder.into_frames().expect("error decoding gif");
-        if options.draw_style == DrawStyle::Braille {
-            braille::print_frames(&options, term_size, frames);
-        } else {
-            unicode_block::print_frames(&options, term_size, frames);
+
+        match options.draw_style {
+            DrawStyle::Braille => {
+                braille::print_frames(&options, term_size, frames);
+            }
+            DrawStyle::UnicodeBlock => {
+                unicode_block::print_frames(&options, term_size, frames);
+            }
+            DrawStyle::Magic => match options.magic_type {
+                Some(MagicType::Iterm) => {
+                    iterm::display(&options, term_size, file_name).unwrap();
+                }
+                None => {
+                    eprintln!("No known magic display modes");
+                }
+            },
         }
     } else {
         let img = match utils::load_image(&file_name) {
@@ -73,11 +74,21 @@ fn main() {
                 return;
             }
         };
-
-        if options.draw_style == DrawStyle::Braille {
-            braille::display(&options, term_size, &img);
-        } else {
-            unicode_block::print_image(&options, term_size, &img);
+        match options.draw_style {
+            DrawStyle::Braille => {
+                braille::display(&options, term_size, &img);
+            }
+            DrawStyle::UnicodeBlock => {
+                unicode_block::print_image(&options, term_size, &img);
+            }
+            DrawStyle::Magic => match options.magic_type {
+                Some(MagicType::Iterm) => {
+                    iterm::display(&options, term_size, &file_name).unwrap();
+                }
+                None => {
+                    eprintln!("No known magic display modes");
+                }
+            },
         }
     }
 }
