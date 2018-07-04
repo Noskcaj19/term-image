@@ -8,14 +8,6 @@ pub fn get_options() -> Options {
         .author("Noskcaj")
         .about("Shows images in your terminal")
         .arg(
-            Arg::with_name("file_format_arg")
-                .takes_value(true)
-                .value_name("file_format")
-                .short("t")
-                .possible_values(&["jpg", "jpeg", "png", "gif", "ico"])
-                .help("Sets the image type"),
-        )
-        .arg(
             Arg::with_name("256_colors")
                 .long("ansi")
                 .visible_alias("256")
@@ -119,25 +111,6 @@ pub fn get_options() -> Options {
         "magic" | "m" => DrawStyle::Magic,
         s => panic!("Impossible draw style in match: {:?}", s),
     };
-
-    if let Some(name) = &options.file_name {
-        if options.auto_detect_format {
-            if name.ends_with(".gif") {
-                options.image_format = Some(ImageFormat::GIF)
-            }
-        }
-    }
-
-    if let Some(format) = matches.value_of("file_format_arg") {
-        options.auto_detect_format = false;
-        options.image_format = match format.to_lowercase().as_str() {
-            "jpg" | "jpeg" => Some(ImageFormat::JPEG),
-            "png" => Some(ImageFormat::PNG),
-            "gif" => Some(ImageFormat::GIF),
-            "ico" => Some(ImageFormat::ICO),
-            e => panic!("Impossible image format in match: {:?}", e),
-        }
-    }
 
     if matches.is_present("no_slopes") {
         options.char_set = CharSet::NoSlopes;

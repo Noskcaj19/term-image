@@ -54,33 +54,30 @@ fn main() {
         }
     }
 
-    match options.image_format {
-        Some(image::ImageFormat::GIF) if options.animated => {
-            let f = std::fs::File::open(&file_name).expect("File not found");
+    if file_name.ends_with(".gif") && options.animated {
+        let f = std::fs::File::open(&file_name).expect("File not found");
 
-            let decoder = image::gif::Decoder::new(f);
-            use image::ImageDecoder;
-            let frames = decoder.into_frames().expect("error decoding gif");
-            if options.draw_style == DrawStyle::Braille {
-                braille::print_frames(&options, term_size, frames);
-            } else {
-                unicode_block::print_frames(&options, term_size, frames);
-            }
+        let decoder = image::gif::Decoder::new(f);
+        use image::ImageDecoder;
+        let frames = decoder.into_frames().expect("error decoding gif");
+        if options.draw_style == DrawStyle::Braille {
+            braille::print_frames(&options, term_size, frames);
+        } else {
+            unicode_block::print_frames(&options, term_size, frames);
         }
-        _ => {
-            let img = match utils::load_image(&options) {
-                Some(img) => img,
-                None => {
-                    eprintln!("Error: Unable to open file for reading");
-                    return;
-                }
-            };
-
-            if options.draw_style == DrawStyle::Braille {
-                braille::display(&options, term_size, &img);
-            } else {
-                unicode_block::print_image(&options, term_size, &img);
+    } else {
+        let img = match utils::load_image(&file_name) {
+            Some(img) => img,
+            None => {
+                eprintln!("Error: Unable to open file for reading");
+                return;
             }
+        };
+
+        if options.draw_style == DrawStyle::Braille {
+            braille::display(&options, term_size, &img);
+        } else {
+            unicode_block::print_image(&options, term_size, &img);
         }
     }
 }

@@ -13,8 +13,6 @@ pub enum DrawStyle {
 pub struct Options {
     // General
     pub file_name: Option<String>,
-    pub auto_detect_format: bool,
-    pub image_format: Option<ImageFormat>,
     pub width: Option<usize>,
     pub height: Option<usize>,
     pub no_tty: bool,
@@ -32,8 +30,6 @@ impl Options {
     pub fn new() -> Options {
         Options {
             file_name: None,
-            auto_detect_format: true,
-            image_format: None,
             width: None,
             height: None,
             no_tty: false,
