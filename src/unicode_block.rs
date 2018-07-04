@@ -7,17 +7,17 @@ use Options;
 
 use utils;
 
-#[derive(Debug, Clone, Copy)]
-pub enum DrawMode {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CharSet {
     All,
     NoSlopes,
     Blocks,
     Halfs,
 }
 
-impl Default for DrawMode {
-    fn default() -> DrawMode {
-        DrawMode::All
+impl Default for CharSet {
+    fn default() -> CharSet {
+        CharSet::All
     }
 }
 
@@ -152,19 +152,19 @@ fn process_block(
     }
 }
 
-fn get_bitmap(draw_mode: DrawMode) -> Vec<(u32, char)> {
-    match draw_mode {
-        DrawMode::All => BITMAPS.to_vec(),
-        DrawMode::Blocks => BITMAPS_BLOCKS.to_vec(),
-        DrawMode::Halfs => BITMAPS_HALFS.to_vec(),
-        DrawMode::NoSlopes => BITMAPS_NO_SLOPES.to_vec(),
+fn get_bitmap(char_set: CharSet) -> Vec<(u32, char)> {
+    match char_set {
+        CharSet::All => BITMAPS.to_vec(),
+        CharSet::Blocks => BITMAPS_BLOCKS.to_vec(),
+        CharSet::Halfs => BITMAPS_HALFS.to_vec(),
+        CharSet::NoSlopes => BITMAPS_NO_SLOPES.to_vec(),
     }
 }
 
 pub fn print_image(options: &Options, max_size: (u16, u16), img: &DynamicImage) {
     let mut img = utils::resize_image(img, (4, 8), max_size);
 
-    let bitmap = get_bitmap(options.draw_mode);
+    let bitmap = get_bitmap(options.char_set);
 
     for y in (0..img.height()).step_by(8) {
         for x in (0..img.width()).step_by(4) {
@@ -182,7 +182,7 @@ pub fn print_image(options: &Options, max_size: (u16, u16), img: &DynamicImage) 
 }
 
 pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
-    let bitmap = get_bitmap(options.draw_mode);
+    let bitmap = get_bitmap(options.char_set);
 
     let mut frame_data = Vec::new();
     for frame in frames {

@@ -13,6 +13,7 @@ mod args;
 mod braille;
 mod iterm;
 mod options;
+use options::DrawStyle;
 pub use options::Options;
 mod unicode_block;
 mod utils;
@@ -22,7 +23,7 @@ use std::env;
 fn main() {
     let options = args::get_options();
 
-    if !options.ignore_tty && !options.width.is_some() && !options.width.is_some() {
+    if !options.no_tty && !options.width.is_some() && !options.width.is_some() {
         if !termion::is_tty(&std::fs::File::create("/dev/stdout").unwrap()) {
             return;
         }
@@ -33,7 +34,7 @@ fn main() {
             options.width.unwrap_or(std::usize::MAX) as u16,
             options.height.unwrap_or(std::usize::MAX) as u16,
         )
-    } else if options.ignore_tty {
+    } else if options.no_tty {
         (80, 25)
     } else {
         match termion::terminal_size() {
@@ -44,7 +45,7 @@ fn main() {
 
     let file_name = &options.file_name.clone().unwrap();
 
-    if options.magic {
+    if options.draw_style == DrawStyle::Magic {
         if let Ok(prog) = env::var("TERM_PROGRAM") {
             if prog == "iTerm.app" {
                 iterm::display(&options, term_size, &file_name).unwrap();
@@ -60,7 +61,7 @@ fn main() {
             let decoder = image::gif::Decoder::new(f);
             use image::ImageDecoder;
             let frames = decoder.into_frames().expect("error decoding gif");
-            if options.braille {
+            if options.draw_style == DrawStyle::Braille {
                 braille::print_frames(&options, term_size, frames);
             } else {
                 unicode_block::print_frames(&options, term_size, frames);
@@ -75,7 +76,7 @@ fn main() {
                 }
             };
 
-            if options.braille {
+            if options.draw_style == DrawStyle::Braille {
                 braille::display(&options, term_size, &img);
             } else {
                 unicode_block::print_image(&options, term_size, &img);

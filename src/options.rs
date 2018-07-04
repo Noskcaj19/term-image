@@ -1,24 +1,31 @@
 use image::ImageFormat;
 use std::default::Default;
-use unicode_block::DrawMode;
+use unicode_block::CharSet;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum DrawStyle {
+    UnicodeBlock,
+    Braille,
+    Magic,
+}
 
 #[derive(Debug, Clone)]
 pub struct Options {
+    // General
     pub file_name: Option<String>,
     pub auto_detect_format: bool,
     pub image_format: Option<ImageFormat>,
-    pub truecolor: bool,
-    pub ignore_tty: bool,
     pub width: Option<usize>,
     pub height: Option<usize>,
-    pub magic: bool,
+    pub no_tty: bool,
+    // Display
+    pub truecolor: bool,
+    pub draw_style: DrawStyle,
     // Unicode block
-    pub draw_mode: DrawMode,
+    pub char_set: CharSet,
     pub blend: bool,
     // GIF
     pub animated: bool,
-    // Braille
-    pub braille: bool,
 }
 
 impl Options {
@@ -27,15 +34,14 @@ impl Options {
             file_name: None,
             auto_detect_format: true,
             image_format: None,
-            truecolor: false,
-            ignore_tty: false,
             width: None,
             height: None,
-            magic: true,
-            draw_mode: Default::default(),
+            no_tty: false,
+            truecolor: false,
+            draw_style: DrawStyle::Magic,
+            char_set: Default::default(),
             blend: true,
             animated: true,
-            braille: false,
         }
     }
 }

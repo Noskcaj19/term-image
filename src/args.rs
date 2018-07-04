@@ -1,7 +1,7 @@
 use clap::{App, Arg};
 use image::ImageFormat;
-use unicode_block::DrawMode;
-use Options;
+use options::{DrawStyle, Options};
+use unicode_block::CharSet;
 
 pub fn get_options() -> Options {
     let matches = App::new("Terminal Image Viewer")
@@ -18,7 +18,7 @@ pub fn get_options() -> Options {
         .arg(
             Arg::with_name("256_colors")
                 .long("ansi")
-                .alias("256")
+                .visible_alias("256")
                 .short("a")
                 .help("Use only ansi 256 colors"),
         )
@@ -32,44 +32,48 @@ pub fn get_options() -> Options {
             Arg::with_name("all")
                 .long("all")
                 .help("Use all unicode drawing characters")
-                .conflicts_with_all(&["no_slopes", "only_blocks", "only_halfs"]),
+                .conflicts_with_all(&["no_slopes", "only_blocks", "only_halfs"])
+                .requires_ifs(&[("draw_style", "block"), ("draw_style", "b")]),
         )
         .arg(
             Arg::with_name("no_slopes")
                 .long("noslopes")
                 .help("Disable angled unicode character (if they are wide in your font)")
-                .conflicts_with_all(&["all", "only_blocks", "only_halfs"]),
+                .conflicts_with_all(&["all", "only_blocks", "only_halfs"])
+                .requires_ifs(&[("draw_style", "block"), ("draw_style", "b")]),
         )
         .arg(
             Arg::with_name("only_blocks")
                 .long("blocks")
                 .help("Only use unicode block characters")
-                .conflicts_with_all(&["all", "no_slopes", "only_halfs"]),
+                .conflicts_with_all(&["all", "no_slopes", "only_halfs"])
+                .requires_ifs(&[("draw_style", "block"), ("draw_style", "b")]),
         )
         .arg(
             Arg::with_name("only_halfs")
                 .long("halfs")
                 .help("Only use unicode half blocks")
-                .conflicts_with_all(&["all", "no_slopes", "only_blocks"]),
+                .conflicts_with_all(&["all", "no_slopes", "only_blocks"])
+                .requires_ifs(&[("draw_style", "block"), ("draw_style", "b")]),
         )
         .arg(
             Arg::with_name("width")
                 .long("width")
                 .short("w")
                 .takes_value(true)
-                .help("Override max display width (maintains aspect ratio)"),
+                .help("Override max display width in cells (maintains aspect ratio)"),
         )
         .arg(
             Arg::with_name("height")
                 .long("height")
                 .short("h")
                 .takes_value(true)
-                .help("Override max display height"),
+                .help("Override max display height in cells (maintains aspect ratio)"),
         )
         .arg(
-            Arg::with_name("force_tty")
-                .long("force-tty")
-                .help("Don't detect tty"),
+            Arg::with_name("no_tty")
+                .long("no-tty")
+                .help("Don't use tty"),
         )
         .arg(
             Arg::with_name("still")
@@ -78,18 +82,19 @@ pub fn get_options() -> Options {
                 .help("Don't animate images"),
         )
         .arg(
-            Arg::with_name("no_magic")
-                .long("no-magic")
+            Arg::with_name("draw_style")
+                .long("mode")
                 .short("m")
-                .help("Disable high-def rendering magic"),
+                .takes_value(true)
+                .default_value("magic")
+                .possible_values(&["block", "b", "dots", "d", "magic", "m"])
+                .help("Display mode"),
         )
         .arg(
-            Arg::with_name("braille")
-                .long("braille")
-                .short("d")
-                .help("Enable unicode braille dot character rendering"),
+            Arg::with_name("file_name")
+                .required(true)
+                .help("Input file name, - for stdin"),
         )
-        .arg(Arg::with_name("file_name").required(true))
         .get_matches();
 
     let mut options = Options::new();
@@ -97,10 +102,8 @@ pub fn get_options() -> Options {
     options.truecolor = !matches.is_present("256_colors");
     options.file_name = matches.value_of("file_name").map(str::to_string);
     options.blend = !matches.is_present("no_blending");
-    options.ignore_tty = matches.is_present("force_tty");
+    options.no_tty = matches.is_present("no_tty");
     options.animated = !matches.is_present("still");
-    options.magic = !matches.is_present("no_magic");
-    options.braille = matches.is_present("braille");
     options.width = matches
         .value_of("width")
         .map(str::to_string)
@@ -109,6 +112,13 @@ pub fn get_options() -> Options {
         .value_of("height")
         .map(str::to_string)
         .and_then(|h| h.parse().ok());
+
+    options.draw_style = match matches.value_of("draw_style").unwrap_or("") {
+        "block" | "b" => DrawStyle::UnicodeBlock,
+        "dots" | "d" => DrawStyle::Braille,
+        "magic" | "m" => DrawStyle::Magic,
+        s => panic!("Impossible draw style in match: {:?}", s),
+    };
 
     if let Some(name) = &options.file_name {
         if options.auto_detect_format {
@@ -125,16 +135,16 @@ pub fn get_options() -> Options {
             "png" => Some(ImageFormat::PNG),
             "gif" => Some(ImageFormat::GIF),
             "ico" => Some(ImageFormat::ICO),
-            _ => panic!("Invalid image format in match"),
+            e => panic!("Impossible image format in match: {:?}", e),
         }
     }
 
     if matches.is_present("no_slopes") {
-        options.draw_mode = DrawMode::NoSlopes;
+        options.char_set = CharSet::NoSlopes;
     } else if matches.is_present("only_blocks") {
-        options.draw_mode = DrawMode::Blocks;
+        options.char_set = CharSet::Blocks;
     } else if matches.is_present("only_halfs") {
-        options.draw_mode = DrawMode::Halfs;
+        options.char_set = CharSet::Halfs;
     }
 
     options
