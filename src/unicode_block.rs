@@ -21,13 +21,6 @@ impl Default for DrawMode {
     }
 }
 
-fn color_to_8bit(color: color::Rgb) -> color::AnsiValue {
-    let r = (u16::from(color.0) * 5 / 255) as u8;
-    let g = (u16::from(color.1) * 5 / 255) as u8;
-    let b = (u16::from(color.2) * 5 / 255) as u8;
-    color::AnsiValue(16 + 36 * r + 6 * g + b)
-}
-
 struct Block {
     ch: char,
     truecolor: bool,
@@ -43,8 +36,8 @@ impl fmt::Debug for Block {
             write!(
                 f,
                 "{}{}{}",
-                Fg(color_to_8bit(self.fg.0)),
-                Bg(color_to_8bit(self.bg.0)),
+                Fg(utils::rgb_to_ansi(self.fg.0)),
+                Bg(utils::rgb_to_ansi(self.bg.0)),
                 self.ch
             )
         }
@@ -161,22 +154,8 @@ fn get_bitmap(draw_mode: DrawMode) -> Vec<(u32, char)> {
     }
 }
 
-fn resize_image(img: &DynamicImage, max_size: (u16, u16)) -> DynamicImage {
-    let img = img.resize(
-        (max_size.0 as u32) * 4,
-        (max_size.1 as u32) * 8,
-        FilterType::Nearest,
-    );
-
-    img.resize_exact(
-        utils::closest_mult(img.width(), 4),
-        utils::closest_mult(img.height(), 8),
-        FilterType::Nearest,
-    )
-}
-
 pub fn print_image(options: &Options, max_size: (u16, u16), img: &DynamicImage) {
-    let mut img = resize_image(img, max_size);
+    let mut img = utils::resize_image(img, 4, 8, max_size);
 
     let bitmap = get_bitmap(options.draw_mode);
 
@@ -201,7 +180,7 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
         let mut image = frame.into_buffer();
         let image = DynamicImage::ImageRgba8(image.clone());
 
-        let mut image = resize_image(&image, max_size);
+        let mut image = utils::resize_image(&image, 4, 8, max_size);
 
         let mut img_data = Vec::new();
 

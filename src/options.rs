@@ -17,6 +17,8 @@ pub struct Options {
     pub blend: bool,
     // GIF
     pub animated: bool,
+    // Braille
+    pub braille: bool,
 }
 
 impl Options {
@@ -33,6 +35,7 @@ impl Options {
             draw_mode: Default::default(),
             blend: true,
             animated: true,
+            braille: false,
         }
     }
 }

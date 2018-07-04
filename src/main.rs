@@ -9,6 +9,7 @@ extern crate libc;
 extern crate signal_hook;
 extern crate termion;
 
+mod braille;
 mod iterm;
 mod options;
 mod unicode_block;
@@ -98,6 +99,12 @@ fn get_options() -> options::Options {
                 .short("m")
                 .help("Disable high-def rendering magic"),
         )
+        .arg(
+            Arg::with_name("braille")
+                .long("braille")
+                .short("d")
+                .help("Enable unicode braille dot character rendering"),
+        )
         .arg(Arg::with_name("file_name").required(true))
         .get_matches();
 
@@ -109,6 +116,7 @@ fn get_options() -> options::Options {
     options.ignore_tty = matches.is_present("force_tty");
     options.animated = !matches.is_present("still");
     options.magic = !matches.is_present("no_magic");
+    options.braille = matches.is_present("braille");
     options.width = matches
         .value_of("width")
         .map(str::to_string)
@@ -182,6 +190,15 @@ fn main() {
         }
     }
 
+    // let img = match utils::load_image(&options) {
+    //     Some(img) => img,
+    //     None => {
+    //         eprintln!("Error: Unable to open file for reading");
+    //         return;
+    //     }
+    // };
+    // braille::display(&options, term_size, &img);
+
     match options.image_format {
         Some(image::ImageFormat::GIF) if options.animated => {
             let f = std::fs::File::open(&file_name).expect("File not found");
@@ -189,7 +206,11 @@ fn main() {
             let decoder = image::gif::Decoder::new(f);
             use image::ImageDecoder;
             let frames = decoder.into_frames().expect("error decoding gif");
-            unicode_block::print_frames(&options, term_size, frames);
+            if options.braille {
+                braille::print_frames(&options, term_size, frames);
+            } else {
+                unicode_block::print_frames(&options, term_size, frames);
+            }
         }
         _ => {
             let img = match utils::load_image(&options) {
@@ -200,7 +221,11 @@ fn main() {
                 }
             };
 
-            unicode_block::print_image(&options, term_size, &img);
+            if options.braille {
+                braille::display(&options, term_size, &img);
+            } else {
+                unicode_block::print_image(&options, term_size, &img);
+            }
         }
     }
 }
