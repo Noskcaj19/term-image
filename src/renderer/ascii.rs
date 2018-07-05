@@ -1,4 +1,4 @@
-use image::{ConvertBuffer, DynamicImage, Frames, GenericImage};
+use image::{DynamicImage, Frames, GenericImage};
 use std::thread;
 use std::time::Duration;
 use termion;
@@ -58,8 +58,10 @@ pub fn display(options: &Options, max_size: (u16, u16), img: &DynamicImage) {
 
     for y in 0..mono.height() {
         for x in 0..mono.width() {
-            let pixel = mono.get_pixel(x, y);
-            let block = best_char(pixel[0], &FONT);
+            let mono_pixel = mono.get_pixel(x, y);
+            let mut block = best_char(mono_pixel[0], &FONT);
+            let pixel = img.get_pixel(x, y);
+            block.fg = Some(Fg(Rgb(pixel[0], pixel[1], pixel[2])));
 
             block.print(options.truecolor);
         }
@@ -73,17 +75,25 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
     for frame in frames {
         let delay = frame.delay().to_integer() as u64;
         let mut image = frame.into_buffer();
-        let image = DynamicImage::ImageLuma8(image.convert());
+        let image = DynamicImage::ImageRgba8(image.clone());
 
         let mut image = utils::resize_image(&image, (1, 1), max_size);
 
+        let mono = image.to_luma();
+
         let mut img_data = Vec::new();
 
-        for y in 0..image.height() {
+        for y in 0..mono.height() {
             let mut inner = Vec::new();
-            for x in 0..image.width() {
+            for x in 0..mono.width() {
+                let mono_pixel = mono.get_pixel(x, y);
+
+                let mut block = best_char(mono_pixel[0], &FONT);
+
                 let pixel = image.get_pixel(x, y);
-                inner.push(best_char(pixel[0], &FONT));
+                block.fg = Some(Fg(Rgb(pixel[0], pixel[1], pixel[2])));
+
+                inner.push(block);
             }
             img_data.push(inner);
         }
