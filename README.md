@@ -12,6 +12,7 @@ Supports many display options, including:
 * Ansi Color
 * Unicode half blocks only
 * Unicode block characters only
+* Ascii text
 * Many unicode block and drawing characters to create a somewhat accurate image
 
 ## Gifs
