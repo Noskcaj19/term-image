@@ -1,6 +1,9 @@
 use image;
 use image::GenericImage;
 use image::{DynamicImage, FilterType};
+use libc;
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
 use termion::color;
 
 pub fn closest_mult(x: u32, base: u32) -> u32 {
@@ -42,4 +45,13 @@ pub fn rgb_to_ansi(color: color::Rgb) -> color::AnsiValue {
     let g = (u16::from(color.1) * 5 / 255) as u8;
     let b = (u16::from(color.2) * 5 / 255) as u8;
     color::AnsiValue(16 + 36 * r + 6 * g + b)
+}
+
+pub fn get_quit_hook() -> Arc<AtomicBool> {
+    let atomic = Arc::new(AtomicBool::new(false));
+    for signal in &[libc::SIGINT, libc::SIGQUIT, libc::SIGTERM] {
+        ::signal_hook::flag::register(*signal, Arc::clone(&atomic))
+            .expect("Unable to hook a termination signal");
+    }
+    atomic
 }

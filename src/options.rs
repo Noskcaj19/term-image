@@ -1,18 +1,5 @@
+use renderer::{CharSet, DrawStyle, MagicType};
 use std::default::Default;
-use unicode_block::CharSet;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum DrawStyle {
-    UnicodeBlock,
-    Braille,
-    Ascii,
-    Magic,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MagicType {
-    Iterm,
-}
 
 #[derive(Debug, Clone)]
 pub struct Options {

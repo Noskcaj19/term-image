@@ -1,7 +1,7 @@
 use clap::{App, Arg};
-use options::{DrawStyle, MagicType, Options};
+use options::Options;
+use renderer::{CharSet, DrawStyle, MagicType};
 use std::env;
-use unicode_block::CharSet;
 
 pub fn get_options() -> Options {
     let matches = App::new("Terminal Image Viewer")

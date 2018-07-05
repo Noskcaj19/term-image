@@ -10,13 +10,9 @@ extern crate signal_hook;
 extern crate termion;
 
 mod args;
-mod ascii;
-mod braille;
-mod iterm;
 mod options;
-use options::DrawStyle;
+mod renderer;
 pub use options::*;
-mod unicode_block;
 mod utils;
 
 fn main() {
@@ -42,60 +38,5 @@ fn main() {
         }
     };
 
-    let file_name = &options.file_name.clone().unwrap();
-
-    if file_name.ends_with(".gif") && options.animated {
-        let f = std::fs::File::open(&file_name).expect("File not found");
-
-        let decoder = image::gif::Decoder::new(f);
-        use image::ImageDecoder;
-        let frames = decoder.into_frames().expect("error decoding gif");
-
-        match options.draw_style {
-            DrawStyle::Braille => {
-                braille::print_frames(&options, term_size, frames);
-            }
-            DrawStyle::UnicodeBlock => {
-                unicode_block::print_frames(&options, term_size, frames);
-            }
-            DrawStyle::Ascii => {
-                ascii::print_frames(&options, term_size, frames);
-            }
-            DrawStyle::Magic => match options.magic_type {
-                Some(MagicType::Iterm) => {
-                    iterm::display(&options, term_size, file_name).unwrap();
-                }
-                None => {
-                    eprintln!("No known magic display modes");
-                }
-            },
-        }
-    } else {
-        let img = match utils::load_image(&file_name) {
-            Some(img) => img,
-            None => {
-                eprintln!("Error: Unable to open file for reading");
-                return;
-            }
-        };
-        match options.draw_style {
-            DrawStyle::Braille => {
-                braille::display(&options, term_size, &img);
-            }
-            DrawStyle::UnicodeBlock => {
-                unicode_block::print_image(&options, term_size, &img);
-            }
-            DrawStyle::Ascii => {
-                ascii::display(&options, term_size, &img);
-            }
-            DrawStyle::Magic => match options.magic_type {
-                Some(MagicType::Iterm) => {
-                    iterm::display(&options, term_size, &file_name).unwrap();
-                }
-                None => {
-                    eprintln!("No known magic display modes");
-                }
-            },
-        }
-    }
+    renderer::render_image(&options, term_size);
 }

@@ -1,4 +1,5 @@
 use image::{DynamicImage, Frames, GenericImage, Rgba};
+use renderer::CharSet;
 use std::thread;
 use std::time::Duration;
 use termion;
@@ -7,20 +8,6 @@ use Options;
 
 use utils;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CharSet {
-    All,
-    NoSlopes,
-    Blocks,
-    Halfs,
-}
-
-impl Default for CharSet {
-    fn default() -> CharSet {
-        CharSet::All
-    }
-}
-
 struct Block {
     ch: char,
     fg: Fg<Rgb>,
@@ -28,11 +15,19 @@ struct Block {
 }
 
 impl Block {
-    pub fn print_truecolor(&self) {
+    pub fn print(&self, truecolor: bool) {
+        if truecolor {
+            self.print_truecolor();
+        } else {
+            self.print_ansi();
+        }
+    }
+
+    fn print_truecolor(&self) {
         print!("{}{}{}", self.fg, self.bg, self.ch)
     }
 
-    pub fn print_ansi(&self) {
+    fn print_ansi(&self) {
         print!(
             "{}{}{}",
             Fg(utils::rgb_to_ansi(self.fg.0)),
@@ -171,16 +166,13 @@ pub fn print_image(options: &Options, max_size: (u16, u16), img: &DynamicImage) 
             let sub_img = img.sub_image(x, y, 4, 8);
             let block = process_block(&sub_img, &bitmap, options.blend);
 
-            if options.truecolor {
-                block.print_truecolor();
-            } else {
-                block.print_ansi();
-            }
+            block.print(options.truecolor);
         }
         println!("{}{}", Fg(color::Reset), Bg(color::Reset));
     }
 }
 
+// TODO: Find a way to reduce duplication
 pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
     let bitmap = get_bitmap(options.char_set);
 
@@ -208,24 +200,15 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
 
     println!("{}{}", termion::clear::All, termion::cursor::Hide);
 
-    use libc;
-    use std::sync::atomic::{AtomicBool, Ordering};
-    use std::sync::Arc;
-    let term = Arc::new(AtomicBool::new(false));
-    for signal in &[libc::SIGINT, libc::SIGQUIT, libc::SIGTERM] {
-        ::signal_hook::flag::register(*signal, Arc::clone(&term)).expect("Unable to hook SIGINT");
-    }
+    use std::sync::atomic::Ordering;
+    let term = utils::get_quit_hook();
 
     'gif: loop {
         for (frame, delay) in &frame_data {
             println!("{}", termion::cursor::Goto(1, 1));
             for line in frame {
                 for block in line {
-                    if options.truecolor {
-                        block.print_truecolor();
-                    } else {
-                        block.print_ansi();
-                    }
+                    block.print(options.truecolor);
                 }
                 println!("{}{}", Fg(color::Reset), Bg(color::Reset));
             }
