@@ -79,7 +79,7 @@ pub fn get_options() -> Options {
                 .short("m")
                 .takes_value(true)
                 .default_value("magic")
-                .possible_values(&["block", "b", "dots", "d", "magic", "m"])
+                .possible_values(&["block", "b", "dots", "d", "ascii", "a", "magic", "m"])
                 .help("Display mode"),
         )
         .arg(
@@ -108,6 +108,7 @@ pub fn get_options() -> Options {
     options.draw_style = match matches.value_of("draw_style").unwrap_or("") {
         "block" | "b" => DrawStyle::UnicodeBlock,
         "dots" | "d" => DrawStyle::Braille,
+        "ascii" | "a" => DrawStyle::Ascii,
         "magic" | "m" => DrawStyle::Magic,
         s => panic!("Impossible draw style in match: {:?}", s),
     };

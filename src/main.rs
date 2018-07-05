@@ -10,6 +10,7 @@ extern crate signal_hook;
 extern crate termion;
 
 mod args;
+mod ascii;
 mod braille;
 mod iterm;
 mod options;
@@ -57,6 +58,9 @@ fn main() {
             DrawStyle::UnicodeBlock => {
                 unicode_block::print_frames(&options, term_size, frames);
             }
+            DrawStyle::Ascii => {
+                ascii::print_frames(&options, term_size, frames);
+            }
             DrawStyle::Magic => match options.magic_type {
                 Some(MagicType::Iterm) => {
                     iterm::display(&options, term_size, file_name).unwrap();
@@ -80,6 +84,9 @@ fn main() {
             }
             DrawStyle::UnicodeBlock => {
                 unicode_block::print_image(&options, term_size, &img);
+            }
+            DrawStyle::Ascii => {
+                ascii::display(&options, term_size, &img);
             }
             DrawStyle::Magic => match options.magic_type {
                 Some(MagicType::Iterm) => {

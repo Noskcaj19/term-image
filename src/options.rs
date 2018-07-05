@@ -5,6 +5,7 @@ use unicode_block::CharSet;
 pub enum DrawStyle {
     UnicodeBlock,
     Braille,
+    Ascii,
     Magic,
 }
 
