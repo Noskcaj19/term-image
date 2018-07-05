@@ -49,7 +49,7 @@ pub fn rgb_to_ansi(color: color::Rgb) -> color::AnsiValue {
 
 pub fn get_quit_hook() -> Arc<AtomicBool> {
     let atomic = Arc::new(AtomicBool::new(false));
-    for signal in &[libc::SIGINT, libc::SIGQUIT, libc::SIGTERM] {
+    for signal in &[libc::SIGINT, libc::SIGQUIT, libc::SIGTERM, libc::SIGWINCH] {
         ::signal_hook::flag::register(*signal, Arc::clone(&atomic))
             .expect("Unable to hook a termination signal");
     }
