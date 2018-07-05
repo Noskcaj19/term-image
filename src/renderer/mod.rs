@@ -65,23 +65,7 @@ pub fn render_image(options: &Options, term_size: (u16, u16)) {
             },
         }
     } else {
-        let img = match utils::load_image(&file_name) {
-            Some(img) => img,
-            None => {
-                eprintln!("Error: Unable to open file for reading");
-                return;
-            }
-        };
         match options.draw_style {
-            DrawStyle::Braille => {
-                braille::display(&options, term_size, &img);
-            }
-            DrawStyle::UnicodeBlock => {
-                unicode_block::print_image(&options, term_size, &img);
-            }
-            DrawStyle::Ascii => {
-                ascii::display(&options, term_size, &img);
-            }
             DrawStyle::Magic => match options.magic_type {
                 Some(MagicType::Iterm) => {
                     iterm::display(&options, term_size, &file_name).unwrap();
@@ -90,6 +74,27 @@ pub fn render_image(options: &Options, term_size: (u16, u16)) {
                     eprintln!("No known magic display modes");
                 }
             },
+            style => {
+                let img = match utils::load_image(&file_name) {
+                    Some(img) => img,
+                    None => {
+                        eprintln!("Error: Unable to open file for reading");
+                        return;
+                    }
+                };
+                match style {
+                    DrawStyle::Braille => {
+                        braille::display(&options, term_size, &img);
+                    }
+                    DrawStyle::UnicodeBlock => {
+                        unicode_block::print_image(&options, term_size, &img);
+                    }
+                    DrawStyle::Ascii => {
+                        ascii::display(&options, term_size, &img);
+                    }
+                    DrawStyle::Magic => panic!("Impossible state"),
+                }
+            }
         }
     }
 }

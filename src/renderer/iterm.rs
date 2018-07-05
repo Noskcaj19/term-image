@@ -6,7 +6,8 @@ use std::io::{self, Read};
 use Options;
 
 pub fn display(options: &Options, max_size: (u16, u16), path: &str) -> io::Result<()> {
-    if options.file_name.clone().unwrap().ends_with(".gif") && !options.animated {
+    // TODO: Fix depending on extension
+    if path.ends_with(".gif") && !options.animated {
         let f = File::open(path)?;
 
         let decoder = Decoder::new(f);
@@ -30,9 +31,17 @@ pub fn display(options: &Options, max_size: (u16, u16), path: &str) -> io::Resul
             &buf,
         )
     } else {
-        let mut f = File::open(path)?;
-        let mut img_data = Vec::new();
-        f.read_to_end(&mut img_data)?;
+        let img_data = if path == "-" {
+            use std::io::{stdin, Read};
+            let mut buf = Vec::new();
+            stdin().read_to_end(&mut buf)?;
+            buf
+        } else {
+            let mut f = File::open(path)?;
+            let mut buf = Vec::new();
+            f.read_to_end(&mut buf)?;
+            buf
+        };
 
         iterm2::download_file(
             &[("inline", "1"), ("height", &max_size.1.to_string())],
