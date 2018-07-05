@@ -17,3 +17,6 @@ Supports many display options, including:
 
 ## Gifs
 ![gif](https://i.imgur.com/UNputum.png)
+
+### ASCII Gif
+[![asciicast](https://asciinema.org/a/190320.png)](https://asciinema.org/a/190320)
