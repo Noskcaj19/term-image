@@ -1,4 +1,4 @@
-use image::{DynamicImage, Frames, GenericImage};
+use image::{DynamicImage, FilterType, Frames, GenericImage};
 use std::thread;
 use std::time::Duration;
 use termion;
@@ -50,11 +50,17 @@ fn best_char(brightness: u8, font: &[(char, u8)]) -> Block {
 }
 
 pub fn display(options: &Options, max_size: (u16, u16), img: &DynamicImage) {
-    let img = utils::resize_image(img, (1, 1), max_size);
+    // Keep aspect ratio, fit in terminal
+    let img = img.resize(
+        max_size.0 as u32 / 2,
+        max_size.1 as u32,
+        FilterType::Nearest,
+    );
+
+    // Stretch out horizontally so it looks decent
+    let img = img.resize_exact(img.width() * 2, img.height(), FilterType::Nearest);
 
     let mono = img.to_luma();
-
-    println!("{}", mono.width());
 
     for y in 0..mono.height() {
         for x in 0..mono.width() {
@@ -77,7 +83,15 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
         let mut image = frame.into_buffer();
         let image = DynamicImage::ImageRgba8(image.clone());
 
-        let mut image = utils::resize_image(&image, (1, 1), max_size);
+        // Keep aspect ratio, fit in terminal
+        let image = image.resize(
+            max_size.0 as u32 / 2,
+            max_size.1 as u32,
+            FilterType::Nearest,
+        );
+
+        // Stretch out horizontally so it looks decent
+        let image = image.resize_exact(image.width() * 2, image.height(), FilterType::Nearest);
 
         let mono = image.to_luma();
 
