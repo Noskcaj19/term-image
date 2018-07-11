@@ -37,6 +37,22 @@ impl Block {
     }
 }
 
+fn premultiply(p: Rgba<u8>) -> Rgba<u8> {
+    if p[3] == 255 {
+        return p;
+    }
+
+    let mut p = p;
+    let alpha = p[3] as f32 / 255.;
+    let bg = 0.;
+
+    for i in 0..3 {
+        p[i] = (((1. - alpha) * bg) + (alpha * p[i] as f32)) as u8
+    }
+
+    p
+}
+
 fn process_block(
     sub_img: &impl GenericImage<Pixel = Rgba<u8>>,
     bitmaps: &[(u32, char)],
@@ -47,6 +63,7 @@ fn process_block(
     let mut max = [0u8; 3];
     let mut min = [255u8; 3];
     for (_, _, p) in sub_img.pixels() {
+        let p = premultiply(p);
         for i in 0..3 {
             max[i] = max[i].max(p[i]);
             min[i] = min[i].min(p[i]);
@@ -77,6 +94,7 @@ fn process_block(
         for x in 0..sub_img.width() {
             bits <<= 1;
             let pixel = sub_img.get_pixel(x, y);
+            let pixel = premultiply(pixel);
             if pixel[split_index] > split_value {
                 bits |= 1;
                 fg_count += 1;
@@ -163,8 +181,8 @@ pub fn print_image(options: &Options, max_size: (u16, u16), img: &DynamicImage) 
 
     for y in (0..img.height()).step_by(8) {
         for x in (0..img.width()).step_by(4) {
-            let sub_img = img.sub_image(x, y, 4, 8);
-            let block = process_block(&sub_img, &bitmap, options.blend);
+            let mut sub_img = img.sub_image(x, y, 4, 8);
+            let block = process_block(&mut sub_img, &bitmap, options.blend);
 
             block.print(options.truecolor);
         }
@@ -189,8 +207,8 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
         for y in (0..image.height()).step_by(8) {
             let mut inner = Vec::new();
             for x in (0..image.width()).step_by(4) {
-                let sub_img = image.sub_image(x, y, 4, 8);
-                inner.push(process_block(&sub_img, &bitmap, options.blend));
+                let mut sub_img = image.sub_image(x, y, 4, 8);
+                inner.push(process_block(&mut sub_img, &bitmap, options.blend));
             }
             img_data.push(inner);
         }
