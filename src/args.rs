@@ -15,6 +15,12 @@ pub fn get_options() -> Options {
                 .help("Use only ansi 256 colors"),
         )
         .arg(
+            Arg::with_name("truecolor_override")
+                .long("truecolor")
+                .short("t")
+                .help("Force truecolor even in non-supportive terminals"),
+        )
+        .arg(
             Arg::with_name("no_blending")
                 .long("noblend")
                 .short("b")
@@ -29,7 +35,7 @@ pub fn get_options() -> Options {
         )
         .arg(
             Arg::with_name("no_slopes")
-                .long("noslopes")
+                .long("no-slopes")
                 .help("Disable angled unicode character (if they are wide in your font)")
                 .conflicts_with_all(&["all", "only_blocks", "only_halfs"])
                 .requires_ifs(&[("draw_style", "block"), ("draw_style", "b")]),
@@ -121,15 +127,30 @@ pub fn get_options() -> Options {
         options.char_set = CharSet::Halfs;
     }
 
+    // Terminal checks
+
     if let Ok(prog) = env::var("TERM_PROGRAM") {
         if prog == "iTerm.app" {
             options.magic_type = Some(MagicType::Iterm)
         }
     }
 
-    // terminal does not support magic, fallback
+    // Terminal does not support magic, fallback
     if let None = options.magic_type {
         options.draw_style = DrawStyle::UnicodeBlock;
+    }
+
+    // Check if truecolor support is reported
+    if let Ok(colorterm) = env::var("COLORTERM") {
+        if colorterm.to_ascii_lowercase() != "truecolor" {
+            if !matches.is_present("truecolor_override") {
+                options.truecolor = false
+            }
+        }
+    } else {
+        if !matches.is_present("truecolor_override") {
+            options.truecolor = false
+        }
     }
 
     options
