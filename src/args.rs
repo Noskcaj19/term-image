@@ -127,5 +127,10 @@ pub fn get_options() -> Options {
         }
     }
 
+    // terminal does not support magic, fallback
+    if let None = options.magic_type {
+        options.draw_style = DrawStyle::UnicodeBlock;
+    }
+
     options
 }
