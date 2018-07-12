@@ -111,14 +111,6 @@ pub fn get_options() -> Options {
         .map(str::to_string)
         .and_then(|h| h.parse().ok());
 
-    options.draw_style = match matches.value_of("draw_style").unwrap_or("") {
-        "block" | "b" => DrawStyle::UnicodeBlock,
-        "dots" | "d" => DrawStyle::Braille,
-        "ascii" | "a" => DrawStyle::Ascii,
-        "magic" | "m" => DrawStyle::Magic,
-        s => panic!("Impossible draw style in match: {:?}", s),
-    };
-
     if matches.is_present("no_slopes") {
         options.char_set = CharSet::NoSlopes;
     } else if matches.is_present("only_blocks") {
@@ -139,6 +131,14 @@ pub fn get_options() -> Options {
     if let None = options.magic_type {
         options.draw_style = DrawStyle::UnicodeBlock;
     }
+
+    options.draw_style = match matches.value_of("draw_style").unwrap_or("") {
+        "block" | "b" => DrawStyle::UnicodeBlock,
+        "dots" | "d" => DrawStyle::Braille,
+        "ascii" | "a" => DrawStyle::Ascii,
+        "magic" | "m" => DrawStyle::Magic,
+        s => panic!("Impossible draw style in match: {:?}", s),
+    };
 
     // Check if truecolor support is reported
     if let Ok(colorterm) = env::var("COLORTERM") {
