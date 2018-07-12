@@ -31,6 +31,22 @@ impl Block {
     }
 }
 
+fn premultiply(p: Rgba<u8>) -> Rgba<u8> {
+    if p[3] == 255 {
+        return p;
+    }
+
+    let mut p = p;
+    let alpha = p[3] as f32 / 255.;
+    let bg = 0.;
+
+    for i in 0..3 {
+        p[i] = (((1. - alpha) * bg) + (alpha * p[i] as f32)) as u8
+    }
+
+    p
+}
+
 fn slice_to_braille(data: &[u8]) -> char {
     let mut v = 0;
     for i in &[0, 2, 4, 1, 3, 5, 6, 7] {
@@ -55,6 +71,7 @@ fn process_block(
     let mut max = [0u8; 3];
     let mut min = [255u8; 3];
     for (_, _, p) in sub_img.pixels() {
+        let p = premultiply(p);
         for i in 0..3 {
             max[i] = max[i].max(p[i]);
             min[i] = min[i].min(p[i]);
@@ -80,6 +97,7 @@ fn process_block(
     for y in 0..sub_img.height() {
         for x in 0..sub_img.width() {
             let pixel = sub_img.get_pixel(x, y);
+            let pixel = premultiply(pixel);
             if pixel[split_index] > split_value {
                 fg_count += 1;
                 for i in 0..3 {

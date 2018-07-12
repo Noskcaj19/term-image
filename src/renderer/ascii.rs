@@ -1,4 +1,4 @@
-use image::{DynamicImage, FilterType, Frames, GenericImage};
+use image::{DynamicImage, FilterType, Frames, GenericImage, Rgba};
 use std::thread;
 use std::time::Duration;
 use termion;
@@ -37,6 +37,22 @@ impl Block {
     }
 }
 
+fn premultiply(p: Rgba<u8>) -> Rgba<u8> {
+    if p[3] == 255 {
+        return p;
+    }
+
+    let mut p = p;
+    let alpha = p[3] as f32 / 255.;
+    let bg = 0.;
+
+    for i in 0..3 {
+        p[i] = (((1. - alpha) * bg) + (alpha * p[i] as f32)) as u8
+    }
+
+    p
+}
+
 fn best_char(brightness: u8, font: &[(char, u8)]) -> Block {
     let mut diff = 100;
     let mut cand = font[0].0;
@@ -67,6 +83,7 @@ pub fn display(options: &Options, max_size: (u16, u16), img: &DynamicImage) {
             let mono_pixel = mono.get_pixel(x, y);
             let mut block = best_char(mono_pixel[0], &FONT);
             let pixel = img.get_pixel(x, y);
+            let pixel = premultiply(pixel);
             block.fg = Some(Fg(Rgb(pixel[0], pixel[1], pixel[2])));
 
             block.print(options.truecolor);
@@ -105,6 +122,7 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
                 let mut block = best_char(mono_pixel[0], &FONT);
 
                 let pixel = image.get_pixel(x, y);
+                let pixel = premultiply(pixel);
                 block.fg = Some(Fg(Rgb(pixel[0], pixel[1], pixel[2])));
 
                 inner.push(block);
