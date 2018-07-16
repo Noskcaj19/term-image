@@ -1,6 +1,7 @@
 mod ascii;
 mod braille;
 mod iterm;
+mod kitty;
 mod unicode_block;
 
 use image;
@@ -24,6 +25,7 @@ impl Default for CharSet {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MagicType {
+    Kitty,
     Iterm,
 }
 
@@ -59,6 +61,9 @@ pub fn render_image(options: &Options, term_size: (u16, u16)) {
                 Some(MagicType::Iterm) => {
                     iterm::display(&options, term_size, file_name).unwrap();
                 }
+                Some(MagicType::Kitty) => {
+                    kitty::print_frames(&options, term_size, frames);
+                }
                 None => {
                     eprintln!("No known magic display modes");
                 }
@@ -69,6 +74,9 @@ pub fn render_image(options: &Options, term_size: (u16, u16)) {
             DrawStyle::Magic => match options.magic_type {
                 Some(MagicType::Iterm) => {
                     iterm::display(&options, term_size, &file_name).unwrap();
+                }
+                Some(MagicType::Kitty) => {
+                    kitty::display(&options, term_size, &file_name).unwrap();
                 }
                 None => {
                     eprintln!("No known magic display modes");

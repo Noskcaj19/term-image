@@ -458,6 +458,7 @@ dependencies = [
 name = "term-image"
 version = "0.1.0"
 dependencies = [
+ "base64 0.9.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.32.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "gif 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
