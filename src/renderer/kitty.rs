@@ -1,5 +1,5 @@
 use base64;
-use image::{self, DynamicImage, FilterType, Frames, GenericImage};
+use image::{self, DynamicImage, Frames, GenericImage};
 use std::io::{self, stdin, stdout, Read, Write};
 use termion::raw::IntoRawMode;
 use Options;
