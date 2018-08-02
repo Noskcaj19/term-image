@@ -4,7 +4,7 @@ use std::default::Default;
 #[derive(Debug, Clone)]
 pub struct Options {
     // General
-    pub file_name: Option<String>,
+    pub file_names: Option<Vec<String>>,
     pub width: Option<usize>,
     pub height: Option<usize>,
     pub no_tty: bool,
@@ -22,7 +22,7 @@ pub struct Options {
 impl Options {
     pub fn new() -> Options {
         Options {
-            file_name: None,
+            file_names: None,
             width: None,
             height: None,
             no_tty: false,
