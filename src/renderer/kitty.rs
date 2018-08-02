@@ -98,8 +98,18 @@ fn read_term_response() -> io::Result<()> {
 }
 
 pub fn display(_options: &Options, max_size: (u16, u16), path: &str) -> io::Result<()> {
-    let img = image::open(path).unwrap();
-    display_image(img, max_size)?;
+    let img = if path == "-" {
+        use std::io::{stdin, Read};
+        let mut buf = Vec::new();
+        stdin().read_to_end(&mut buf)?;
+        image::load_from_memory(&buf).ok()
+    } else {
+        image::open(path).ok()
+    };
+
+    if let Some(img) = img {
+        display_image(img, max_size)?;
+    }
 
     // read_term_response()?;
 
