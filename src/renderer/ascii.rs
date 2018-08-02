@@ -1,10 +1,9 @@
+use crate::utils;
+use crate::Options;
 use image::{DynamicImage, FilterType, Frames, GenericImage, Rgba};
 use std::thread;
 use std::time::Duration;
-use termion;
 use termion::color::{self, Bg, Fg, Rgb};
-use utils;
-use Options;
 
 struct Block {
     ch: char,
@@ -97,7 +96,7 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
     let mut frame_data = Vec::new();
     for frame in frames {
         let delay = frame.delay().to_integer() as u64;
-        let mut image = frame.into_buffer();
+        let image = frame.into_buffer();
         let image = DynamicImage::ImageRgba8(image.clone());
 
         // Keep aspect ratio, fit in terminal

@@ -1,7 +1,5 @@
-use image;
 use image::GenericImage;
 use image::{DynamicImage, FilterType};
-use libc;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 use termion::color;

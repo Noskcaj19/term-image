@@ -1,8 +1,7 @@
-use base64;
-use image::{self, DynamicImage, Frames, GenericImage};
+use crate::Options;
+use image::{DynamicImage, Frames, GenericImage};
 use std::io::{self, stdin, stdout, Read, Write};
 use termion::raw::IntoRawMode;
-use Options;
 
 const PROTOCOL_START: &'static [u8] = b"\x1b_G";
 const PROTOCOL_END: &'static [u8] = b"\x1b\\";

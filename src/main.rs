@@ -1,19 +1,10 @@
 #![feature(iterator_step_by)]
-
-extern crate base64;
-extern crate clap;
-extern crate failure;
-extern crate gif;
-extern crate image;
-extern crate iterm2;
-extern crate libc;
-extern crate signal_hook;
-extern crate termion;
+#![warn(rust_2018_idioms)]
 
 mod args;
 mod options;
 mod renderer;
-pub use options::*;
+pub use crate::options::*;
 mod utils;
 
 fn main() {

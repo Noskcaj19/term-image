@@ -1,11 +1,9 @@
-use utils;
-use Options;
-
+use crate::utils;
+use crate::Options;
 use image::imageops::colorops::{self, BiLevel};
 use image::{DynamicImage, Frames, GenericImage, Luma, Rgba};
 use std::thread;
 use std::time::Duration;
-use termion;
 use termion::color::{self, Bg, Fg, Rgb};
 
 struct Block {
@@ -146,7 +144,7 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
     let mut frame_data = Vec::new();
     for frame in frames {
         let delay = frame.delay().to_integer() as u64;
-        let mut image = frame.into_buffer();
+        let image = frame.into_buffer();
         let image = DynamicImage::ImageRgba8(image.clone());
 
         let mut image = utils::resize_image(&image, (2, 4), max_size);

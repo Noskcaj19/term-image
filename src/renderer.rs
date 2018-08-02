@@ -4,10 +4,9 @@ mod iterm;
 mod kitty;
 mod unicode_block;
 
-use image;
+use crate::utils;
+use crate::Options;
 use std::fs::File;
-use utils;
-use Options;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CharSet {
