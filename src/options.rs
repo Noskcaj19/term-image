@@ -7,7 +7,7 @@ pub struct Options {
     pub file_names: Option<Vec<String>>,
     pub width: Option<usize>,
     pub height: Option<usize>,
-    pub no_tty: bool,
+    pub isatty: bool,
     pub magic_type: Option<MagicType>,
     // Display
     pub truecolor: bool,
@@ -25,7 +25,7 @@ impl Options {
             file_names: None,
             width: None,
             height: None,
-            no_tty: false,
+            isatty: true,
             magic_type: None,
             truecolor: false,
             draw_style: DrawStyle::Magic,

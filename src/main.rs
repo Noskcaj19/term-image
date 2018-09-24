@@ -17,21 +17,22 @@ mod utils;
 fn main() {
     let options = args::get_options();
 
-    if !options.no_tty && !options.width.is_some() && !options.width.is_some() {
-        if !termion::is_tty(&std::fs::File::create("/dev/stdout").unwrap()) {
-            return;
-        }
+    if !options.isatty && !options.width.is_some() && !options.width.is_some() {
+        return;
     }
 
+    // TODO: If-let chains
     let term_size = if options.width.is_some() || options.height.is_some() {
         (
-            options.width.unwrap_or(std::usize::MAX) as u16,
-            options.height.unwrap_or(std::usize::MAX) as u16,
+            // safe unwraps
+            options.width.unwrap() as u16,
+            options.height.unwrap() as u16,
         )
-    } else if options.no_tty {
+    } else if !options.isatty {
         (80, 25)
     } else {
         match termion::terminal_size() {
+            // Adds some padding
             Ok(size) => (size.0 - 4, size.1 - 8),
             Err(_) => return,
         }

@@ -1,3 +1,5 @@
+// TODO: Improve image output quality?
+
 use image::{DynamicImage, FilterType, Frames, GenericImageView, Rgba};
 use std::thread;
 use std::time::Duration;

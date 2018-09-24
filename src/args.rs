@@ -1,7 +1,8 @@
 use clap::{App, Arg};
 use options::Options;
 use renderer::{CharSet, DrawStyle, MagicType};
-use std::env;
+use std::{env, fs::File};
+use termion;
 
 pub fn get_options() -> Options {
     let matches = App::new("Terminal Image Viewer")
@@ -60,10 +61,6 @@ pub fn get_options() -> Options {
                 .takes_value(true)
                 .help("Override max display height in cells (maintains aspect ratio)"),
         ).arg(
-            Arg::with_name("no_tty")
-                .long("no-tty")
-                .help("Don't use tty"),
-        ).arg(
             Arg::with_name("still")
                 .long("still")
                 .short("s")
@@ -90,7 +87,7 @@ pub fn get_options() -> Options {
         .values_of("file_names")
         .map(|values| values.map(str::to_string).collect());
     options.blend = !matches.is_present("no_blending");
-    options.no_tty = matches.is_present("no_tty");
+    options.isatty = termion::is_tty(&File::create("/dev/stdout").unwrap());
     options.animated = !matches.is_present("still");
     options.width = matches
         .value_of("width")
