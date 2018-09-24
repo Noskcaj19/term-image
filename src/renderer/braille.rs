@@ -2,7 +2,7 @@ use utils;
 use Options;
 
 use image::imageops::colorops::{self, BiLevel};
-use image::{DynamicImage, Frames, GenericImage, Luma, Rgba};
+use image::{DynamicImage, Frames, GenericImage, GenericImageView, Luma, Rgba};
 use std::thread;
 use std::time::Duration;
 use termion;

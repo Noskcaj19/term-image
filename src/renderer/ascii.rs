@@ -1,4 +1,4 @@
-use image::{DynamicImage, FilterType, Frames, GenericImage, Rgba};
+use image::{DynamicImage, FilterType, Frames, GenericImageView, Rgba};
 use std::thread;
 use std::time::Duration;
 use termion;

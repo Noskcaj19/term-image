@@ -1,4 +1,4 @@
-use image::{DynamicImage, Frames, GenericImage, Rgba};
+use image::{DynamicImage, Frames, GenericImage, GenericImageView, Rgba};
 use renderer::CharSet;
 use std::thread;
 use std::time::Duration;

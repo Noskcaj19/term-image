@@ -1,5 +1,5 @@
 use image;
-use image::GenericImage;
+use image::GenericImageView;
 use image::{DynamicImage, FilterType};
 use libc;
 use std::sync::atomic::AtomicBool;
