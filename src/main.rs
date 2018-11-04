@@ -1,23 +1,11 @@
-extern crate base64;
-extern crate clap;
-extern crate failure;
-extern crate gif;
-extern crate image;
-extern crate iterm2;
-extern crate libc;
-extern crate signal_hook;
-extern crate termion;
+extern crate term_image;
 
-mod args;
-mod options;
-mod renderer;
-pub use options::*;
-mod utils;
+use term_image::{args, renderer};
 
 fn main() {
     let options = args::get_options();
 
-    if !options.isatty && !options.width.is_some() && !options.width.is_some() {
+    if !options.isatty && options.width.is_none() && options.width.is_none() {
         return;
     }
 

@@ -1,10 +1,7 @@
-use image;
-use image::GenericImageView;
-use image::{DynamicImage, FilterType};
+use image::{self, DynamicImage, FilterType, GenericImageView};
 use libc;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
-use termion::color;
 
 pub fn closest_mult(x: u32, base: u32) -> u32 {
     base * ((x as f32) / base as f32).round() as u32
@@ -28,8 +25,8 @@ pub fn resize_image(
     max_size: (u16, u16),
 ) -> DynamicImage {
     let img = img.resize(
-        (max_size.0 as u32) * cell_size.0,
-        (max_size.1 as u32) * cell_size.1,
+        (u32::from(max_size.0)) * cell_size.0,
+        (u32::from(max_size.1)) * cell_size.1,
         FilterType::Nearest,
     );
 
@@ -38,13 +35,6 @@ pub fn resize_image(
         closest_mult(img.height(), cell_size.1),
         FilterType::Nearest,
     )
-}
-
-pub fn rgb_to_ansi(color: color::Rgb) -> color::AnsiValue {
-    let r = (u16::from(color.0) * 5 / 255) as u8;
-    let g = (u16::from(color.1) * 5 / 255) as u8;
-    let b = (u16::from(color.2) * 5 / 255) as u8;
-    color::AnsiValue(16 + 36 * r + 6 * g + b)
 }
 
 pub fn get_quit_hook() -> Arc<AtomicBool> {

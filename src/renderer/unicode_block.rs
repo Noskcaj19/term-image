@@ -1,11 +1,13 @@
-use image::{DynamicImage, Frames, GenericImage, GenericImageView, Rgba};
-use renderer::CharSet;
 use std::thread;
 use std::time::Duration;
+
+use image::{DynamicImage, Frames, GenericImage, GenericImageView, Rgba};
 use termion;
 use termion::color::{self, Bg, Fg, Rgb};
-use Options;
 
+use super::{draw_utils, DrawableCell};
+use options::Options;
+use renderer::CharSet;
 use utils;
 
 struct Block {
@@ -14,15 +16,7 @@ struct Block {
     bg: Bg<Rgb>,
 }
 
-impl Block {
-    pub fn print(&self, truecolor: bool) {
-        if truecolor {
-            self.print_truecolor();
-        } else {
-            self.print_ansi();
-        }
-    }
-
+impl DrawableCell for Block {
     fn print_truecolor(&self) {
         print!("{}{}{}", self.fg, self.bg, self.ch)
     }
@@ -30,27 +24,11 @@ impl Block {
     fn print_ansi(&self) {
         print!(
             "{}{}{}",
-            Fg(utils::rgb_to_ansi(self.fg.0)),
-            Bg(utils::rgb_to_ansi(self.bg.0)),
+            Fg(draw_utils::rgb_to_ansi(self.fg.0)),
+            Bg(draw_utils::rgb_to_ansi(self.bg.0)),
             self.ch
         )
     }
-}
-
-fn premultiply(p: Rgba<u8>) -> Rgba<u8> {
-    if p[3] == 255 {
-        return p;
-    }
-
-    let mut p = p;
-    let alpha = p[3] as f32 / 255.;
-    let bg = 0.;
-
-    for i in 0..3 {
-        p[i] = (((1. - alpha) * bg) + (alpha * p[i] as f32)) as u8
-    }
-
-    p
 }
 
 fn process_block(
@@ -63,7 +41,7 @@ fn process_block(
     let mut max = [0u8; 3];
     let mut min = [255u8; 3];
     for (_, _, p) in sub_img.pixels() {
-        let p = premultiply(p);
+        let p = draw_utils::premultiply(p);
         for i in 0..3 {
             max[i] = max[i].max(p[i]);
             min[i] = min[i].min(p[i]);
@@ -94,17 +72,17 @@ fn process_block(
         for x in 0..sub_img.width() {
             bits <<= 1;
             let pixel = sub_img.get_pixel(x, y);
-            let pixel = premultiply(pixel);
+            let pixel = draw_utils::premultiply(pixel);
             if pixel[split_index] > split_value {
                 bits |= 1;
                 fg_count += 1;
                 for i in 0..3 {
-                    fg_color[i] += pixel[i] as u32;
+                    fg_color[i] += u32::from(pixel[i]);
                 }
             } else {
                 bg_count += 1;
                 for i in 0..3 {
-                    bg_color[i] += pixel[i] as u32;
+                    bg_color[i] += u32::from(pixel[i]);
                 }
             }
         }
@@ -122,7 +100,7 @@ fn process_block(
     }
 
     // A perfect match is 0x0 so start at max
-    let mut best_diff = 0xffffffffu32;
+    let mut best_diff = 0xffff_ffffu32;
     let mut best_char = ' ';
     // The best match may be inverted
     let mut invert = false;
@@ -182,7 +160,7 @@ pub fn print_image(options: &Options, max_size: (u16, u16), img: &DynamicImage) 
     for y in (0..img.height()).step_by(8) {
         for x in (0..img.width()).step_by(4) {
             let mut sub_img = img.sub_image(x, y, 4, 8);
-            let block = process_block(&mut sub_img, &bitmap, options.blend);
+            let block = process_block(&sub_img, &bitmap, options.blend);
 
             block.print(options.truecolor);
         }
@@ -196,7 +174,7 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
 
     let mut frame_data = Vec::new();
     for frame in frames {
-        let delay = frame.delay().to_integer() as u64;
+        let delay = u64::from(frame.delay().to_integer());
         let mut image = frame.into_buffer();
         let image = DynamicImage::ImageRgba8(image.clone());
 
@@ -208,7 +186,7 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
             let mut inner = Vec::new();
             for x in (0..image.width()).step_by(4) {
                 let mut sub_img = image.sub_image(x, y, 4, 8);
-                inner.push(process_block(&mut sub_img, &bitmap, options.blend));
+                inner.push(process_block(&sub_img, &bitmap, options.blend));
             }
             img_data.push(inner);
         }
@@ -239,8 +217,10 @@ pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
     }
 }
 
+#[cfg_attr(feature = "cargo-clippy", allow(clippy::unreadable_literal))]
 const BITMAPS_HALFS: [(u32, char); 2] = [(0x00000000, ' '), (0x0000ffff, '▄')];
 
+#[cfg_attr(feature = "cargo-clippy", allow(clippy::unreadable_literal))]
 const BITMAPS_BLOCKS: [(u32, char); 8] = [
     (0x00000000, ' '),
     (0x0000000f, '▁'),
@@ -252,6 +232,7 @@ const BITMAPS_BLOCKS: [(u32, char); 8] = [
     (0x0fffffff, '▇'),
 ];
 
+#[cfg_attr(feature = "cargo-clippy", allow(clippy::unreadable_literal))]
 const BITMAPS_NO_SLOPES: [(u32, char); 51] = [
     (0x00000000, ' '),
     (0x0000000f, '▁'),
@@ -306,6 +287,7 @@ const BITMAPS_NO_SLOPES: [(u32, char); 51] = [
     (0x00066000, '▪'),
 ];
 
+#[cfg_attr(feature = "cargo-clippy", allow(clippy::unreadable_literal))]
 const BITMAPS: [(u32, char); 55] = [
     (0x00000000, ' '),
     (0x0000000f, '▁'),

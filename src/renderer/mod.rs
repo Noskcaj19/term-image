@@ -1,13 +1,16 @@
+use std::fs::File;
+
 mod ascii;
 mod braille;
 mod iterm;
 mod kitty;
 mod unicode_block;
 
+mod draw_utils;
+
 use image;
-use std::fs::File;
+use options::Options;
 use utils;
-use Options;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CharSet {
@@ -35,6 +38,19 @@ pub enum DrawStyle {
     Braille,
     Ascii,
     Magic,
+}
+
+trait DrawableCell {
+    fn print(&self, truecolor: bool) {
+        if truecolor {
+            self.print_truecolor();
+        } else {
+            self.print_ansi();
+        }
+    }
+
+    fn print_truecolor(&self);
+    fn print_ansi(&self);
 }
 
 pub fn render_image(options: &Options, term_size: (u16, u16)) {

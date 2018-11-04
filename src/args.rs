@@ -14,58 +14,68 @@ pub fn get_options() -> Options {
                 .visible_alias("256")
                 .short("a")
                 .help("Use only ansi 256 colors"),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("truecolor_override")
                 .long("truecolor")
                 .short("t")
                 .help("Force truecolor even in non-supportive terminals"),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("no_blending")
                 .long("noblend")
                 .short("b")
                 .help("Disable blending characters"),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("all")
                 .long("all")
                 .help("Use all unicode drawing characters")
                 .conflicts_with_all(&["no_slopes", "only_blocks", "only_halfs"])
                 .requires_ifs(&[("draw_style", "block"), ("draw_style", "b")]),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("no_slopes")
                 .long("no-slopes")
                 .help("Disable angled unicode character (if they are wide in your font)")
                 .conflicts_with_all(&["all", "only_blocks", "only_halfs"])
                 .requires_ifs(&[("draw_style", "block"), ("draw_style", "b")]),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("only_blocks")
                 .long("blocks")
                 .help("Only use unicode block characters")
                 .conflicts_with_all(&["all", "no_slopes", "only_halfs"])
                 .requires_ifs(&[("draw_style", "block"), ("draw_style", "b")]),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("only_halfs")
                 .long("halfs")
                 .help("Only use unicode half blocks")
                 .conflicts_with_all(&["all", "no_slopes", "only_blocks"])
                 .requires_ifs(&[("draw_style", "block"), ("draw_style", "b")]),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("width")
                 .long("width")
                 .short("w")
                 .takes_value(true)
                 .help("Override max display width in cells (maintains aspect ratio)"),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("height")
                 .long("height")
                 .short("h")
                 .takes_value(true)
                 .help("Override max display height in cells (maintains aspect ratio)"),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("still")
                 .long("still")
                 .short("s")
                 .help("Don't animate images"),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("draw_style")
                 .long("mode")
                 .short("m")
@@ -73,12 +83,14 @@ pub fn get_options() -> Options {
                 .default_value("magic")
                 .possible_values(&["block", "b", "dots", "d", "ascii", "a", "magic", "m"])
                 .help("Display mode"),
-        ).arg(
+        )
+        .arg(
             Arg::with_name("file_names")
                 .required(true)
                 .multiple(true)
                 .help("Input file name, - for stdin"),
-        ).get_matches();
+        )
+        .get_matches();
 
     let mut options = Options::new();
 
@@ -121,7 +133,7 @@ pub fn get_options() -> Options {
     }
 
     // Terminal does not support magic, fallback
-    if let None = options.magic_type {
+    if options.magic_type.is_none() {
         options.draw_style = DrawStyle::UnicodeBlock;
     }
 
@@ -135,15 +147,13 @@ pub fn get_options() -> Options {
 
     // Check if truecolor support is reported
     if let Ok(colorterm) = env::var("COLORTERM") {
-        if colorterm.to_ascii_lowercase() != "truecolor" {
-            if !matches.is_present("truecolor_override") {
-                options.truecolor = false
-            }
-        }
-    } else {
-        if !matches.is_present("truecolor_override") {
+        if colorterm.to_ascii_lowercase() != "truecolor"
+            && !matches.is_present("truecolor_override")
+        {
             options.truecolor = false
         }
+    } else if !matches.is_present("truecolor_override") {
+        options.truecolor = false
     }
 
     options

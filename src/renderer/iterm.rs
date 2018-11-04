@@ -3,7 +3,7 @@ use iterm2;
 use std::fs::File;
 use std::io::{self, Read};
 
-use Options;
+use options::Options;
 
 pub fn display(options: &Options, max_size: (u16, u16), path: &str) -> io::Result<()> {
     // TODO: Fix depending on extension
@@ -18,7 +18,8 @@ pub fn display(options: &Options, max_size: (u16, u16), path: &str) -> io::Resul
 
         let width = reader.width();
         let height = reader.height();
-        let global_palette = &(*reader.global_palette().clone().unwrap().clone());
+
+        let global_palette = reader.global_palette().unwrap();
 
         let mut buf = Vec::new();
         {

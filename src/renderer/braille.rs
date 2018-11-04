@@ -1,50 +1,28 @@
-use utils;
-use Options;
+use std::thread;
+use std::time::Duration;
 
 use image::imageops::colorops::{self, BiLevel};
 use image::{DynamicImage, Frames, GenericImage, GenericImageView, Luma, Rgba};
-use std::thread;
-use std::time::Duration;
 use termion;
 use termion::color::{self, Bg, Fg, Rgb};
+
+use super::{draw_utils, DrawableCell};
+use options::Options;
+use utils;
 
 struct Block {
     ch: char,
     fg: Fg<Rgb>,
 }
 
-impl Block {
-    fn print(&self, truecolor: bool) {
-        if truecolor {
-            self.print_truecolor();
-        } else {
-            self.print_ansi();
-        }
-    }
-
+impl DrawableCell for Block {
     fn print_truecolor(&self) {
         print!("{}{}", self.fg, self.ch);
     }
 
     fn print_ansi(&self) {
-        print!("{}{}", Fg(utils::rgb_to_ansi(self.fg.0)), self.ch)
+        print!("{}{}", Fg(draw_utils::rgb_to_ansi(self.fg.0)), self.ch)
     }
-}
-
-fn premultiply(p: Rgba<u8>) -> Rgba<u8> {
-    if p[3] == 255 {
-        return p;
-    }
-
-    let mut p = p;
-    let alpha = p[3] as f32 / 255.;
-    let bg = 0.;
-
-    for i in 0..3 {
-        p[i] = (((1. - alpha) * bg) + (alpha * p[i] as f32)) as u8
-    }
-
-    p
 }
 
 fn slice_to_braille(data: &[u8]) -> char {
@@ -53,7 +31,7 @@ fn slice_to_braille(data: &[u8]) -> char {
         v <<= 1;
         v |= data[*i as usize];
     }
-    ::std::char::from_u32(0x2800 + v as u32).unwrap()
+    ::std::char::from_u32(0x2800 + u32::from(v)).unwrap()
 }
 
 fn process_block(
@@ -71,7 +49,7 @@ fn process_block(
     let mut max = [0u8; 3];
     let mut min = [255u8; 3];
     for (_, _, p) in sub_img.pixels() {
-        let p = premultiply(p);
+        let p = draw_utils::premultiply(p);
         for i in 0..3 {
             max[i] = max[i].max(p[i]);
             min[i] = min[i].min(p[i]);
@@ -97,20 +75,20 @@ fn process_block(
     for y in 0..sub_img.height() {
         for x in 0..sub_img.width() {
             let pixel = sub_img.get_pixel(x, y);
-            let pixel = premultiply(pixel);
+            let pixel = draw_utils::premultiply(pixel);
             if pixel[split_index] > split_value {
                 fg_count += 1;
                 for i in 0..3 {
-                    fg_color[i] += pixel[i] as u32;
+                    fg_color[i] += u32::from(pixel[i]);
                 }
             }
         }
     }
 
     // Get the average
-    for i in 0..3 {
+    for fg in &mut fg_color {
         if fg_count != 0 {
-            fg_color[i] /= fg_count;
+            *fg /= fg_count;
         }
     }
 
@@ -145,7 +123,7 @@ pub fn display(options: &Options, max_size: (u16, u16), img: &DynamicImage) {
 pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
     let mut frame_data = Vec::new();
     for frame in frames {
-        let delay = frame.delay().to_integer() as u64;
+        let delay = u64::from(frame.delay().to_integer());
         let mut image = frame.into_buffer();
         let image = DynamicImage::ImageRgba8(image.clone());
 

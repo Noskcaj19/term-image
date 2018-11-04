@@ -1,11 +1,13 @@
+use std::io::{self, stdin, stdout, Read, Write};
+
 use base64;
 use image::{self, DynamicImage, Frames, GenericImageView};
-use std::io::{self, stdin, stdout, Read, Write};
 use termion::raw::IntoRawMode;
-use Options;
 
-const PROTOCOL_START: &'static [u8] = b"\x1b_G";
-const PROTOCOL_END: &'static [u8] = b"\x1b\\";
+use options::Options;
+
+const PROTOCOL_START: &[u8] = b"\x1b_G";
+const PROTOCOL_END: &[u8] = b"\x1b\\";
 const MAX_BUFFER: usize = 2048;
 
 fn print_cmd_payload(cmds: &[(&str, &str)], payload: &str) -> io::Result<()> {
@@ -22,15 +24,15 @@ fn print_cmd_payload(cmds: &[(&str, &str)], payload: &str) -> io::Result<()> {
     while payload.len() > MAX_BUFFER {
         let (buf, new_payload) = payload.split_at(MAX_BUFFER);
         payload = new_payload;
-        stdout.write(PROTOCOL_START)?;
+        stdout.write_all(PROTOCOL_START)?;
         write!(stdout, "{},m=1;", cmds)?;
-        stdout.write(&buf)?;
-        stdout.write(PROTOCOL_END)?;
+        stdout.write_all(&buf)?;
+        stdout.write_all(PROTOCOL_END)?;
     }
-    stdout.write(PROTOCOL_START)?;
+    stdout.write_all(PROTOCOL_START)?;
     write!(stdout, "{},m=0;", cmds)?;
-    stdout.write(&payload)?;
-    stdout.write(PROTOCOL_END)?;
+    stdout.write_all(&payload)?;
+    stdout.write_all(PROTOCOL_END)?;
 
     stdout.flush()?;
     Ok(())
@@ -84,12 +86,10 @@ fn read_term_response() -> io::Result<()> {
     let mut data = Vec::new();
     let mut buf = [0; 1];
     loop {
-        if data.len() >= 2 {
-            if &data[data.len() - 2..] == PROTOCOL_END {
-                break;
-            }
+        if data.len() >= 2 && &data[data.len() - 2..] == PROTOCOL_END {
+            break;
         }
-        stdin.read(&mut buf)?;
+        let _ = stdin.read(&mut buf)?;
         data.push(buf[0]);
     }
     // Dont let the compiler remove stdout
