@@ -1,6 +1,7 @@
 use renderer::{CharSet, DrawStyle, MagicType};
 use std::default::Default;
 
+/// Store configuration
 #[derive(Debug, Clone)]
 pub struct Options {
     // General

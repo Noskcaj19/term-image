@@ -4,6 +4,7 @@ use renderer::{CharSet, DrawStyle, MagicType};
 use std::{env, fs::File};
 use termion;
 
+/// Parse cli args into Options
 pub fn get_options() -> Options {
     let matches = App::new("Terminal Image Viewer")
         .author("Noskcaj")
@@ -119,7 +120,6 @@ pub fn get_options() -> Options {
     }
 
     // Terminal checks
-
     if let Ok(prog) = env::var("TERM_PROGRAM") {
         if prog == "iTerm.app" {
             options.magic_type = Some(MagicType::Iterm);
