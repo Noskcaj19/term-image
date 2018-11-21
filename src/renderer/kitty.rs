@@ -1,9 +1,10 @@
 use std::io::{self, stdin, stdout, Read, Write};
 
 use base64;
-use image::{self, DynamicImage, Frames, GenericImageView};
+use image::{DynamicImage, GenericImageView};
 use termion::raw::IntoRawMode;
 
+use super::display;
 use options::Options;
 
 const PROTOCOL_START: &[u8] = b"\x1b_G";
@@ -54,11 +55,11 @@ fn display_path(path: &str) -> io::Result<()> {
     Ok(())
 }
 
-fn display_image(img: DynamicImage, _max_size: (u16, u16)) -> io::Result<()> {
+fn display_image(img: &DynamicImage, _max_size: (u16, u16)) -> io::Result<()> {
     let (width, height) = img.dimensions();
     let (data, bits) = match img {
-        DynamicImage::ImageRgb8(rgb) => (rgb.into_vec(), 24),
-        DynamicImage::ImageRgba8(rgba) => (rgba.into_vec(), 32),
+        DynamicImage::ImageRgb8(rgb) => (rgb.to_vec(), 24),
+        DynamicImage::ImageRgba8(rgba) => (rgba.to_vec(), 32),
         _ => unimplemented!("IMG Variant"),
     };
     let payload = base64::encode_config(&data, base64::STANDARD);
@@ -97,26 +98,25 @@ fn read_term_response() -> io::Result<()> {
     Ok(())
 }
 
-pub fn display(_options: &Options, max_size: (u16, u16), path: &str) -> io::Result<()> {
-    let img = if path == "-" {
-        use std::io::{stdin, Read};
-        let mut buf = Vec::new();
-        stdin().read_to_end(&mut buf)?;
-        image::load_from_memory(&buf).ok()
-    } else {
-        image::open(path).ok()
-    };
+pub struct Kitty;
 
-    if let Some(img) = img {
-        display_image(img, max_size)?;
+impl display::TermDisplay for Kitty {
+    fn animated(
+        &self,
+        _options: &Options,
+        _term_size: (u16, u16),
+        _img_src: display::ImageSource,
+    ) -> display::Result<()> {
+        // TODO: Implement
+        unimplemented!();
     }
 
-    // read_term_response()?;
-
-    Ok(())
-}
-
-// TODO: Find a way to reduce duplication
-pub fn print_frames(_options: &Options, _max_size: (u16, u16), _frames: Frames) {
-    unimplemented!()
+    fn still(
+        &self,
+        _options: &Options,
+        term_size: (u16, u16),
+        mut img_src: display::ImageSource,
+    ) -> display::Result<()> {
+        display_image(img_src.image().ok_or(())?, term_size).map_err(|_| ())
+    }
 }

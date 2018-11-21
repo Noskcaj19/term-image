@@ -3,11 +3,11 @@
 use std::thread;
 use std::time::Duration;
 
-use image::{DynamicImage, FilterType, Frames, GenericImageView};
+use image::{DynamicImage, FilterType, GenericImageView};
 use termion;
 use termion::color::{self, Bg, Fg, Rgb};
 
-use super::{draw_utils, DrawableCell};
+use super::{display, draw_utils, DrawableCell};
 use options::Options;
 use utils;
 
@@ -46,94 +46,109 @@ fn best_char(brightness: u8, font: &[(char, u8)]) -> Block {
     Block { ch: cand, fg: None }
 }
 
-pub fn display(options: &Options, max_size: (u16, u16), img: &DynamicImage) {
-    // Keep aspect ratio, fit in terminal
-    let img = img.resize(
-        u32::from(max_size.0) / 2,
-        u32::from(max_size.1),
-        FilterType::Nearest,
-    );
+pub struct Ascii;
 
-    // Stretch out horizontally so it looks decent
-    let img = img.resize_exact(img.width() * 2, img.height(), FilterType::Nearest);
+impl display::TermDisplay for Ascii {
+    // TODO: Find a way to reduce duplication
+    fn animated(
+        &self,
+        options: &Options,
+        term_size: (u16, u16),
+        mut img_src: display::ImageSource,
+    ) -> display::Result<()> {
+        let mut frame_data = Vec::new();
+        for frame in img_src.frames().ok_or(())? {
+            let delay = u64::from(frame.delay().to_integer());
+            let mut image = frame.into_buffer();
+            let image = DynamicImage::ImageRgba8(image.clone());
 
-    let mono = img.to_luma();
+            // Keep aspect ratio, fit in terminal
+            let image = image.resize(
+                u32::from(term_size.0) / 2,
+                u32::from(term_size.1),
+                FilterType::Nearest,
+            );
 
-    for y in 0..mono.height() {
-        for x in 0..mono.width() {
-            let mono_pixel = mono.get_pixel(x, y);
-            let mut block = best_char(mono_pixel[0], &FONT);
-            let pixel = img.get_pixel(x, y);
-            let pixel = draw_utils::premultiply(pixel);
-            block.fg = Some(Fg(Rgb(pixel[0], pixel[1], pixel[2])));
+            // Stretch out horizontally so it looks decent
+            let image = image.resize_exact(image.width() * 2, image.height(), FilterType::Nearest);
 
-            block.print(options.truecolor);
+            let mono = image.to_luma();
+
+            let mut img_data = Vec::new();
+
+            for y in 0..mono.height() {
+                let mut inner = Vec::new();
+                for x in 0..mono.width() {
+                    let mono_pixel = mono.get_pixel(x, y);
+
+                    let mut block = best_char(mono_pixel[0], &FONT);
+
+                    let pixel = image.get_pixel(x, y);
+                    let pixel = draw_utils::premultiply(pixel);
+                    block.fg = Some(Fg(Rgb(pixel[0], pixel[1], pixel[2])));
+
+                    inner.push(block);
+                }
+                img_data.push(inner);
+            }
+
+            frame_data.push((img_data, delay));
         }
-        println!();
+
+        println!("{}{}", termion::clear::All, termion::cursor::Hide);
+
+        use std::sync::atomic::Ordering;
+        let term = utils::get_quit_hook();
+
+        'gif: loop {
+            for (frame, delay) in &frame_data {
+                println!("{}", termion::cursor::Goto(1, 1));
+                for line in frame {
+                    for block in line {
+                        block.print(options.truecolor);
+                    }
+                    println!("{}{}", Fg(color::Reset), Bg(color::Reset));
+                }
+                thread::sleep(Duration::from_millis(*delay));
+                if term.load(Ordering::Relaxed) {
+                    println!("{}", termion::cursor::Show);
+                    break 'gif;
+                }
+            }
+        }
+        Ok(())
     }
-}
-
-// TODO: Find a way to reduce duplication
-pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
-    let mut frame_data = Vec::new();
-    for frame in frames {
-        let delay = u64::from(frame.delay().to_integer());
-        let mut image = frame.into_buffer();
-        let image = DynamicImage::ImageRgba8(image.clone());
-
+    fn still(
+        &self,
+        options: &Options,
+        term_size: (u16, u16),
+        mut img_src: display::ImageSource,
+    ) -> display::Result<()> {
         // Keep aspect ratio, fit in terminal
-        let image = image.resize(
-            u32::from(max_size.0) / 2,
-            u32::from(max_size.1),
+        let img = img_src.image().ok_or(())?.resize(
+            u32::from(term_size.0) / 2,
+            u32::from(term_size.1),
             FilterType::Nearest,
         );
 
         // Stretch out horizontally so it looks decent
-        let image = image.resize_exact(image.width() * 2, image.height(), FilterType::Nearest);
+        let img = img.resize_exact(img.width() * 2, img.height(), FilterType::Nearest);
 
-        let mono = image.to_luma();
-
-        let mut img_data = Vec::new();
+        let mono = img.to_luma();
 
         for y in 0..mono.height() {
-            let mut inner = Vec::new();
             for x in 0..mono.width() {
                 let mono_pixel = mono.get_pixel(x, y);
-
                 let mut block = best_char(mono_pixel[0], &FONT);
-
-                let pixel = image.get_pixel(x, y);
+                let pixel = img.get_pixel(x, y);
                 let pixel = draw_utils::premultiply(pixel);
                 block.fg = Some(Fg(Rgb(pixel[0], pixel[1], pixel[2])));
 
-                inner.push(block);
+                block.print(options.truecolor);
             }
-            img_data.push(inner);
+            println!();
         }
-
-        frame_data.push((img_data, delay));
-    }
-
-    println!("{}{}", termion::clear::All, termion::cursor::Hide);
-
-    use std::sync::atomic::Ordering;
-    let term = utils::get_quit_hook();
-
-    'gif: loop {
-        for (frame, delay) in &frame_data {
-            println!("{}", termion::cursor::Goto(1, 1));
-            for line in frame {
-                for block in line {
-                    block.print(options.truecolor);
-                }
-                println!("{}{}", Fg(color::Reset), Bg(color::Reset));
-            }
-            thread::sleep(Duration::from_millis(*delay));
-            if term.load(Ordering::Relaxed) {
-                println!("{}", termion::cursor::Show);
-                break 'gif;
-            }
-        }
+        Ok(())
     }
 }
 

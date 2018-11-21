@@ -1,3 +1,7 @@
 /target
 **/*.rs.bk
 test_images
+
+# IntelliJ IDEA
+/.idea
+*.iml

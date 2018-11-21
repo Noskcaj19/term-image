@@ -2,11 +2,11 @@ use std::thread;
 use std::time::Duration;
 
 use image::imageops::colorops::{self, BiLevel};
-use image::{DynamicImage, Frames, GenericImage, GenericImageView, Luma, Rgba};
+use image::{DynamicImage, GenericImage, GenericImageView, Luma, Rgba};
 use termion;
 use termion::color::{self, Bg, Fg, Rgb};
 
-use super::{draw_utils, DrawableCell};
+use super::{display, draw_utils, DrawableCell};
 use options::Options;
 use utils;
 
@@ -98,77 +98,93 @@ fn process_block(
     }
 }
 
-pub fn display(options: &Options, max_size: (u16, u16), img: &DynamicImage) {
-    let mut img = utils::resize_image(img, (2, 4), max_size);
+pub struct Braille;
 
-    let mut mono = img.to_luma();
-    let map = BiLevel;
+impl display::TermDisplay for Braille {
+    // TODO: Find a way to reduce duplication
+    fn animated(
+        &self,
+        options: &Options,
+        term_size: (u16, u16),
+        mut img_src: display::ImageSource,
+    ) -> display::Result<()> {
+        let mut frame_data = Vec::new();
+        for frame in img_src.frames().ok_or(())? {
+            let delay = u64::from(frame.delay().to_integer());
+            let mut image = frame.into_buffer();
+            let image = DynamicImage::ImageRgba8(image.clone());
 
-    colorops::dither(&mut mono, &map);
+            let mut image = utils::resize_image(&image, (2, 4), term_size);
 
-    for y in (0..img.height()).step_by(4) {
-        for x in (0..img.width()).step_by(2) {
-            // `sub_image()` is a cheap reference
-            let sub_img = img.sub_image(x, y, 2, 4);
-            let sub_mono_img = mono.sub_image(x, y, 2, 4);
+            let mut mono = image.to_luma();
+            let map = BiLevel;
 
-            let block = process_block(&sub_img, &sub_mono_img);
-            block.print(options.truecolor);
+            // Dither with Floyd-Steinberg
+            colorops::dither(&mut mono, &map);
+
+            let mut img_data = Vec::new();
+
+            for y in (0..image.height()).step_by(4) {
+                let mut inner = Vec::new();
+                for x in (0..image.width()).step_by(2) {
+                    let sub_img = image.sub_image(x, y, 2, 4);
+                    let sub_mono_img = mono.sub_image(x, y, 2, 4);
+                    inner.push(process_block(&sub_img, &sub_mono_img));
+                }
+                img_data.push(inner);
+            }
+
+            frame_data.push((img_data, delay));
         }
-        println!();
+
+        println!("{}{}", termion::clear::All, termion::cursor::Hide);
+
+        use std::sync::atomic::Ordering;
+        let term = utils::get_quit_hook();
+
+        'gif: loop {
+            for (frame, delay) in &frame_data {
+                println!("{}", termion::cursor::Goto(1, 1));
+                for line in frame {
+                    for block in line {
+                        block.print(options.truecolor);
+                    }
+                    println!("{}{}", Fg(color::Reset), Bg(color::Reset));
+                }
+                thread::sleep(Duration::from_millis(*delay));
+                if term.load(Ordering::Relaxed) {
+                    println!("{}", termion::cursor::Show);
+                    break 'gif;
+                }
+            }
+        }
+        Ok(())
     }
-}
 
-// TODO: Find a way to reduce duplication
-pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
-    let mut frame_data = Vec::new();
-    for frame in frames {
-        let delay = u64::from(frame.delay().to_integer());
-        let mut image = frame.into_buffer();
-        let image = DynamicImage::ImageRgba8(image.clone());
+    fn still(
+        &self,
+        options: &Options,
+        term_size: (u16, u16),
+        mut img_src: display::ImageSource,
+    ) -> display::Result<()> {
+        let mut img = utils::resize_image(img_src.image().ok_or(())?, (2, 4), term_size);
 
-        let mut image = utils::resize_image(&image, (2, 4), max_size);
-
-        let mut mono = image.to_luma();
+        let mut mono = img.to_luma();
         let map = BiLevel;
 
-        // Dither with Floyd-Steinberg
         colorops::dither(&mut mono, &map);
 
-        let mut img_data = Vec::new();
-
-        for y in (0..image.height()).step_by(4) {
-            let mut inner = Vec::new();
-            for x in (0..image.width()).step_by(2) {
-                let sub_img = image.sub_image(x, y, 2, 4);
+        for y in (0..img.height()).step_by(4) {
+            for x in (0..img.width()).step_by(2) {
+                // `sub_image()` is a cheap reference
+                let sub_img = img.sub_image(x, y, 2, 4);
                 let sub_mono_img = mono.sub_image(x, y, 2, 4);
-                inner.push(process_block(&sub_img, &sub_mono_img));
+
+                let block = process_block(&sub_img, &sub_mono_img);
+                block.print(options.truecolor);
             }
-            img_data.push(inner);
+            println!();
         }
-
-        frame_data.push((img_data, delay));
-    }
-
-    println!("{}{}", termion::clear::All, termion::cursor::Hide);
-
-    use std::sync::atomic::Ordering;
-    let term = utils::get_quit_hook();
-
-    'gif: loop {
-        for (frame, delay) in &frame_data {
-            println!("{}", termion::cursor::Goto(1, 1));
-            for line in frame {
-                for block in line {
-                    block.print(options.truecolor);
-                }
-                println!("{}{}", Fg(color::Reset), Bg(color::Reset));
-            }
-            thread::sleep(Duration::from_millis(*delay));
-            if term.load(Ordering::Relaxed) {
-                println!("{}", termion::cursor::Show);
-                break 'gif;
-            }
-        }
+        Ok(())
     }
 }

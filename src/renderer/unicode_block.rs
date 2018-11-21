@@ -1,11 +1,11 @@
 use std::thread;
 use std::time::Duration;
 
-use image::{DynamicImage, Frames, GenericImage, GenericImageView, Rgba};
+use image::{DynamicImage, GenericImage, GenericImageView, Rgba};
 use termion;
 use termion::color::{self, Bg, Fg, Rgb};
 
-use super::{draw_utils, DrawableCell};
+use super::{display, draw_utils, DrawableCell};
 use options::Options;
 use renderer::CharSet;
 use utils;
@@ -30,6 +30,8 @@ impl DrawableCell for Block {
         )
     }
 }
+
+pub struct UnicodeBlock;
 
 fn process_block(
     sub_img: &impl GenericImage<Pixel = Rgba<u8>>,
@@ -57,7 +59,6 @@ fn process_block(
             split_index = i
         }
     }
-
     let split_value = min[split_index] + best_split / 2;
 
     // Then use the median of the range to find the average of the forground and background
@@ -152,68 +153,83 @@ fn get_bitmap(char_set: CharSet) -> Vec<(u32, char)> {
     }
 }
 
-pub fn print_image(options: &Options, max_size: (u16, u16), img: &DynamicImage) {
-    let mut img = utils::resize_image(img, (4, 8), max_size);
+impl super::display::TermDisplay for UnicodeBlock {
+    fn animated(
+        &self,
+        options: &Options,
+        term_size: (u16, u16),
+        mut img_src: display::ImageSource,
+    ) -> display::Result<()> {
+        let frames = img_src.frames().ok_or(())?;
+        let bitmap = get_bitmap(options.char_set);
 
-    let bitmap = get_bitmap(options.char_set);
+        let mut frame_data = Vec::new();
+        for frame in frames {
+            let delay = u64::from(frame.delay().to_integer());
+            let mut image = frame.into_buffer();
+            let image = DynamicImage::ImageRgba8(image.clone());
 
-    for y in (0..img.height()).step_by(8) {
-        for x in (0..img.width()).step_by(4) {
-            let mut sub_img = img.sub_image(x, y, 4, 8);
-            let block = process_block(&sub_img, &bitmap, options.blend);
+            let mut image = utils::resize_image(&image, (4, 8), term_size);
 
-            block.print(options.truecolor);
-        }
-        println!("{}{}", Fg(color::Reset), Bg(color::Reset));
-    }
-}
+            let mut img_data = Vec::new();
 
-// TODO: Find a way to reduce duplication
-pub fn print_frames(options: &Options, max_size: (u16, u16), frames: Frames) {
-    let bitmap = get_bitmap(options.char_set);
-
-    let mut frame_data = Vec::new();
-    for frame in frames {
-        let delay = u64::from(frame.delay().to_integer());
-        let mut image = frame.into_buffer();
-        let image = DynamicImage::ImageRgba8(image.clone());
-
-        let mut image = utils::resize_image(&image, (4, 8), max_size);
-
-        let mut img_data = Vec::new();
-
-        for y in (0..image.height()).step_by(8) {
-            let mut inner = Vec::new();
-            for x in (0..image.width()).step_by(4) {
-                let mut sub_img = image.sub_image(x, y, 4, 8);
-                inner.push(process_block(&sub_img, &bitmap, options.blend));
-            }
-            img_data.push(inner);
-        }
-
-        frame_data.push((img_data, delay));
-    }
-
-    println!("{}{}", termion::clear::All, termion::cursor::Hide);
-
-    use std::sync::atomic::Ordering;
-    let term = utils::get_quit_hook();
-
-    'gif: loop {
-        for (frame, delay) in &frame_data {
-            println!("{}", termion::cursor::Goto(1, 1));
-            for line in frame {
-                for block in line {
-                    block.print(options.truecolor);
+            for y in (0..image.height()).step_by(8) {
+                let mut inner = Vec::new();
+                for x in (0..image.width()).step_by(4) {
+                    let mut sub_img = image.sub_image(x, y, 4, 8);
+                    inner.push(process_block(&sub_img, &bitmap, options.blend));
                 }
-                println!("{}{}", Fg(color::Reset), Bg(color::Reset));
+                img_data.push(inner);
             }
-            thread::sleep(Duration::from_millis(*delay));
-            if term.load(Ordering::Relaxed) {
-                println!("{}", termion::cursor::Show);
-                break 'gif;
+
+            frame_data.push((img_data, delay));
+        }
+
+        println!("{}{}", termion::clear::All, termion::cursor::Hide);
+
+        use std::sync::atomic::Ordering;
+        let term = utils::get_quit_hook();
+
+        'gif: loop {
+            for (frame, delay) in &frame_data {
+                println!("{}", termion::cursor::Goto(1, 1));
+                for line in frame {
+                    for block in line {
+                        block.print(options.truecolor);
+                    }
+                    println!("{}{}", Fg(color::Reset), Bg(color::Reset));
+                }
+                thread::sleep(Duration::from_millis(*delay));
+                if term.load(Ordering::Relaxed) {
+                    println!("{}", termion::cursor::Show);
+                    break 'gif;
+                }
             }
         }
+        Ok(())
+    }
+
+    fn still(
+        &self,
+        options: &Options,
+        term_size: (u16, u16),
+        mut img_src: display::ImageSource,
+    ) -> display::Result<()> {
+        let img = img_src.image().ok_or(())?;
+        let mut img = utils::resize_image(img, (4, 8), term_size);
+
+        let bitmap = get_bitmap(options.char_set);
+
+        for y in (0..img.height()).step_by(8) {
+            for x in (0..img.width()).step_by(4) {
+                let mut sub_img = img.sub_image(x, y, 4, 8);
+                let block = process_block(&sub_img, &bitmap, options.blend);
+
+                block.print(options.truecolor);
+            }
+            println!("{}{}", Fg(color::Reset), Bg(color::Reset));
+        }
+        Ok(())
     }
 }
 

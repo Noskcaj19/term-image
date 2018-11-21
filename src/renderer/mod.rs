@@ -1,16 +1,13 @@
-use std::fs::File;
-
 mod ascii;
 mod braille;
 mod iterm;
 mod kitty;
 mod unicode_block;
 
+mod display;
 mod draw_utils;
 
-use image;
 use options::Options;
-use utils;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CharSet {
@@ -56,71 +53,27 @@ trait DrawableCell {
 pub fn render_image(options: &Options, term_size: (u16, u16)) {
     let file_names = &options.file_names.clone().unwrap();
     for file_name in file_names {
+        let display: Box<display::TermDisplay> = match options.draw_style {
+            DrawStyle::Ascii => Box::new(ascii::Ascii),
+            DrawStyle::Braille => Box::new(braille::Braille),
+            DrawStyle::UnicodeBlock => Box::new(unicode_block::UnicodeBlock),
+            DrawStyle::Magic => match options.magic_type {
+                Some(MagicType::Iterm) => Box::new(iterm::Iterm),
+                Some(MagicType::Kitty) => Box::new(kitty::Kitty),
+                None => {
+                    eprintln!("No known magic display modes");
+                    continue;
+                }
+            },
+        };
+
+        let img_src = self::display::ImageSource::new(file_name);
         if file_name.ends_with(".gif") && options.animated {
-            let f = File::open(&file_name).expect("File not found");
-
-            let decoder = image::gif::Decoder::new(f);
-            use image::ImageDecoder;
-            let frames = decoder.into_frames().expect("error decoding gif");
-
-            match options.draw_style {
-                DrawStyle::Braille => {
-                    braille::print_frames(&options, term_size, frames);
-                }
-                DrawStyle::UnicodeBlock => {
-                    unicode_block::print_frames(&options, term_size, frames);
-                }
-                DrawStyle::Ascii => {
-                    ascii::print_frames(&options, term_size, frames);
-                }
-                DrawStyle::Magic => match options.magic_type {
-                    Some(MagicType::Iterm) => {
-                        iterm::display(&options, term_size, file_name).unwrap();
-                    }
-                    Some(MagicType::Kitty) => {
-                        kitty::print_frames(&options, term_size, frames);
-                    }
-                    None => {
-                        eprintln!("No known magic display modes");
-                    }
-                },
-            }
+            display.animated(&options, term_size, img_src);
         } else {
-            match options.draw_style {
-                DrawStyle::Magic => match options.magic_type {
-                    Some(MagicType::Iterm) => {
-                        iterm::display(&options, term_size, &file_name).unwrap();
-                    }
-                    Some(MagicType::Kitty) => {
-                        kitty::display(&options, term_size, &file_name).unwrap();
-                    }
-                    None => {
-                        eprintln!("No known magic display modes");
-                    }
-                },
-                style => {
-                    let img = match utils::load_image(&file_name) {
-                        Some(img) => img,
-                        None => {
-                            eprintln!("Error: Unable to open file for reading");
-                            return;
-                        }
-                    };
-                    match style {
-                        DrawStyle::Braille => {
-                            braille::display(&options, term_size, &img);
-                        }
-                        DrawStyle::UnicodeBlock => {
-                            unicode_block::print_image(&options, term_size, &img);
-                        }
-                        DrawStyle::Ascii => {
-                            ascii::display(&options, term_size, &img);
-                        }
-                        DrawStyle::Magic => panic!("Impossible state"),
-                    }
-                }
-            }
+            display.still(&options, term_size, img_src);
         }
+
         if file_names.len() > 1 {
             println!();
         }
