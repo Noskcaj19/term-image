@@ -233,7 +233,7 @@ impl super::display::TermDisplay for UnicodeBlock {
 
                 block.print(options.truecolor, &mut stdout);
             }
-            writeln!(stdout, "{}{}", Fg(color::Reset), Bg(color::Reset));
+            let _ = writeln!(stdout, "{}{}", Fg(color::Reset), Bg(color::Reset));
         }
         Ok(())
     }

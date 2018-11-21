@@ -193,7 +193,7 @@ impl display::TermDisplay for Braille {
                 let block = process_block(&sub_img, &sub_mono_img);
                 block.print(options.truecolor, &mut stdout);
             }
-            writeln!(stdout);
+            let _ = writeln!(stdout);
         }
         Ok(())
     }
