@@ -13,8 +13,8 @@ fn main() {
     let term_size = if options.width.is_some() || options.height.is_some() {
         (
             // safe unwraps
-            options.width.unwrap() as u16,
-            options.height.unwrap() as u16,
+            options.width.unwrap_or(std::usize::MAX) as u16,
+            options.height.unwrap_or(std::usize::MAX) as u16,
         )
     } else if !options.isatty {
         (80, 25)
