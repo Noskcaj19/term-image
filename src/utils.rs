@@ -1,4 +1,4 @@
-use image::{self, DynamicImage, FilterType, GenericImageView};
+use image::{DynamicImage, FilterType, GenericImageView};
 use libc;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -6,20 +6,6 @@ use std::sync::Arc;
 /// Returns the closest multiple of a base
 pub fn closest_mult(x: u32, base: u32) -> u32 {
     base * ((x as f32) / base as f32).round() as u32
-}
-
-/// Loads an image from the provided path, or if the path is `-` the image will
-/// be loaded from stdin
-pub fn load_image(path: &str) -> Option<image::DynamicImage> {
-    // Read stdin
-    if path == "-" {
-        use std::io::{stdin, Read};
-        let mut buf = Vec::new();
-        stdin().read_to_end(&mut buf).ok()?;
-        image::load_from_memory(&buf).ok()
-    } else {
-        Some(image::open(path).ok()?)
-    }
 }
 
 /// Resizes an image to fit within a max size, then scales an image to fit within a block size
