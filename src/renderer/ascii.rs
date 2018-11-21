@@ -1,5 +1,6 @@
 // TODO: Improve image output quality?
 
+use std::io::{stdout, Write};
 use std::thread;
 use std::time::Duration;
 
@@ -17,19 +18,19 @@ struct Block {
 }
 
 impl DrawableCell for Block {
-    fn print_truecolor(&self) {
+    fn print_truecolor(&self, stdout: &mut impl Write) {
         if let Some(fg) = self.fg {
-            print!("{}{}", fg, self.ch);
+            let _ = write!(stdout, "{}{}", fg, self.ch);
         } else {
-            print!("{}", self.ch)
+            let _ = write!(stdout, "{}", self.ch);
         }
     }
 
-    fn print_ansi(&self) {
+    fn print_ansi(&self, stdout: &mut impl Write) {
         if let Some(fg) = self.fg {
-            print!("{}{}", Fg(draw_utils::rgb_to_ansi(fg.0)), self.ch)
+            let _ = write!(stdout, "{}{}", Fg(draw_utils::rgb_to_ansi(fg.0)), self.ch);
         } else {
-            print!("{}", self.ch)
+            let _ = write!(stdout, "{}", self.ch);
         }
     }
 }
@@ -56,6 +57,8 @@ impl display::TermDisplay for Ascii {
         term_size: (u16, u16),
         mut img_src: display::ImageSource,
     ) -> display::Result<()> {
+        let stdout = stdout();
+        let mut stdout = stdout.lock();
         let mut frame_data = Vec::new();
         for frame in img_src.frames().ok_or(())? {
             let delay = u64::from(frame.delay().to_integer());
@@ -95,23 +98,23 @@ impl display::TermDisplay for Ascii {
             frame_data.push((img_data, delay));
         }
 
-        println!("{}{}", termion::clear::All, termion::cursor::Hide);
+        let _ = writeln!(stdout, "{}{}", termion::clear::All, termion::cursor::Hide);
 
         use std::sync::atomic::Ordering;
         let term = utils::get_quit_hook();
 
         'gif: loop {
             for (frame, delay) in &frame_data {
-                println!("{}", termion::cursor::Goto(1, 1));
+                let _ = writeln!(stdout, "{}", termion::cursor::Goto(1, 1));
                 for line in frame {
                     for block in line {
-                        block.print(options.truecolor);
+                        block.print(options.truecolor, &mut stdout);
                     }
-                    println!("{}{}", Fg(color::Reset), Bg(color::Reset));
+                    let _ = writeln!(stdout, "{}{}", Fg(color::Reset), Bg(color::Reset));
                 }
                 thread::sleep(Duration::from_millis(*delay));
                 if term.load(Ordering::Relaxed) {
-                    println!("{}", termion::cursor::Show);
+                    let _ = writeln!(stdout, "{}", termion::cursor::Show);
                     break 'gif;
                 }
             }
@@ -124,6 +127,8 @@ impl display::TermDisplay for Ascii {
         term_size: (u16, u16),
         mut img_src: display::ImageSource,
     ) -> display::Result<()> {
+        let stdout = stdout();
+        let mut stdout = stdout.lock();
         // Keep aspect ratio, fit in terminal
         let img = img_src.image().ok_or(())?.resize(
             u32::from(term_size.0) / 2,
@@ -144,9 +149,9 @@ impl display::TermDisplay for Ascii {
                 let pixel = draw_utils::premultiply(pixel);
                 block.fg = Some(Fg(Rgb(pixel[0], pixel[1], pixel[2])));
 
-                block.print(options.truecolor);
+                block.print(options.truecolor, &mut stdout);
             }
-            println!();
+            let _ = writeln!(stdout);
         }
         Ok(())
     }

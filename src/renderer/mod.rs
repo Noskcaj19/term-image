@@ -9,6 +9,8 @@ mod draw_utils;
 
 use options::Options;
 
+use std::io::Write;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CharSet {
     All,
@@ -38,16 +40,16 @@ pub enum DrawStyle {
 }
 
 trait DrawableCell {
-    fn print(&self, truecolor: bool) {
+    fn print(&self, truecolor: bool, stdout: &mut impl Write) {
         if truecolor {
-            self.print_truecolor();
+            self.print_truecolor(stdout);
         } else {
-            self.print_ansi();
+            self.print_ansi(stdout);
         }
     }
 
-    fn print_truecolor(&self);
-    fn print_ansi(&self);
+    fn print_truecolor(&self, stdout: &mut impl Write);
+    fn print_ansi(&self, stdout: &mut impl Write);
 }
 
 pub fn render_image(options: &Options, term_size: (u16, u16)) {

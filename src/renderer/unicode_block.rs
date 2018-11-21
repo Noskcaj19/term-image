@@ -1,3 +1,4 @@
+use std::io::{stdout, Write};
 use std::thread;
 use std::time::Duration;
 
@@ -17,17 +18,18 @@ struct Block {
 }
 
 impl DrawableCell for Block {
-    fn print_truecolor(&self) {
-        print!("{}{}{}", self.fg, self.bg, self.ch)
+    fn print_truecolor(&self, stdout: &mut impl Write) {
+        let _ = write!(stdout, "{}{}{}", self.fg, self.bg, self.ch);
     }
 
-    fn print_ansi(&self) {
-        print!(
+    fn print_ansi(&self, stdout: &mut impl Write) {
+        let _ = write!(
+            stdout,
             "{}{}{}",
             Fg(draw_utils::rgb_to_ansi(self.fg.0)),
             Bg(draw_utils::rgb_to_ansi(self.bg.0)),
             self.ch
-        )
+        );
     }
 }
 
@@ -160,6 +162,8 @@ impl super::display::TermDisplay for UnicodeBlock {
         term_size: (u16, u16),
         mut img_src: display::ImageSource,
     ) -> display::Result<()> {
+        let stdout = stdout();
+        let mut stdout = stdout.lock();
         let frames = img_src.frames().ok_or(())?;
         let bitmap = get_bitmap(options.char_set);
 
@@ -185,7 +189,7 @@ impl super::display::TermDisplay for UnicodeBlock {
             frame_data.push((img_data, delay));
         }
 
-        println!("{}{}", termion::clear::All, termion::cursor::Hide);
+        let _ = write!(stdout, "{}{}", termion::clear::All, termion::cursor::Hide);
 
         use std::sync::atomic::Ordering;
         let term = utils::get_quit_hook();
@@ -195,13 +199,13 @@ impl super::display::TermDisplay for UnicodeBlock {
                 println!("{}", termion::cursor::Goto(1, 1));
                 for line in frame {
                     for block in line {
-                        block.print(options.truecolor);
+                        block.print(options.truecolor, &mut stdout);
                     }
-                    println!("{}{}", Fg(color::Reset), Bg(color::Reset));
+                    let _ = write!(stdout, "{}{}", Fg(color::Reset), Bg(color::Reset));
                 }
                 thread::sleep(Duration::from_millis(*delay));
                 if term.load(Ordering::Relaxed) {
-                    println!("{}", termion::cursor::Show);
+                    let _ = write!(stdout, "{}", termion::cursor::Show);
                     break 'gif;
                 }
             }
@@ -215,6 +219,8 @@ impl super::display::TermDisplay for UnicodeBlock {
         term_size: (u16, u16),
         mut img_src: display::ImageSource,
     ) -> display::Result<()> {
+        let stdout = stdout();
+        let mut stdout = stdout.lock();
         let img = img_src.image().ok_or(())?;
         let mut img = utils::resize_image(img, (4, 8), term_size);
 
@@ -225,9 +231,9 @@ impl super::display::TermDisplay for UnicodeBlock {
                 let mut sub_img = img.sub_image(x, y, 4, 8);
                 let block = process_block(&sub_img, &bitmap, options.blend);
 
-                block.print(options.truecolor);
+                block.print(options.truecolor, &mut stdout);
             }
-            println!("{}{}", Fg(color::Reset), Bg(color::Reset));
+            writeln!(stdout, "{}{}", Fg(color::Reset), Bg(color::Reset));
         }
         Ok(())
     }
