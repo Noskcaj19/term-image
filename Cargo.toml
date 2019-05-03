@@ -13,6 +13,3 @@ gif = "0.10.1"
 signal-hook = "0.1.5"
 libc = "0.2.43"
 base64 = "0.10.0"
-
-[features]
-iolock = []
