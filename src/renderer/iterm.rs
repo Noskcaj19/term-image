@@ -16,7 +16,7 @@ impl display::TermDisplay for Iterm {
         mut img_src: display::ImageSource,
     ) -> display::Result<()> {
         let mut img_data = Vec::new();
-        img_src.data().read_to_end(&mut img_data);
+        img_src.data().read_to_end(&mut img_data).map_err(|_| ())?;
         iterm2::download_file(
             &[("inline", "1"), ("height", &term_size.1.to_string())],
             &img_data,
@@ -55,7 +55,7 @@ impl display::TermDisplay for Iterm {
             .map_err(|_| ())
         } else {
             let mut img_data = Vec::new();
-            img_src.data().read_to_end(&mut img_data);
+            img_src.data().read_to_end(&mut img_data).map_err(|_| ())?;
             iterm2::download_file(
                 &[("inline", "1"), ("height", &term_size.1.to_string())],
                 &img_data,

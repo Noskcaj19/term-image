@@ -123,7 +123,7 @@ impl display::TermDisplay for Braille {
                 Err(_) => continue,
             };
             let delay = u64::from(frame.delay().to_integer());
-            let mut image = frame.into_buffer();
+            let image = frame.into_buffer();
             let image = DynamicImage::ImageRgba8(image.clone());
 
             let mut image = utils::resize_image(&image, (2, 4), term_size);

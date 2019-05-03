@@ -71,9 +71,9 @@ pub fn render_image(options: &Options, term_size: (u16, u16)) {
 
         let img_src = self::display::ImageSource::new(file_name);
         if file_name.ends_with(".gif") && options.animated {
-            display.animated(&options, term_size, img_src);
+            let _ = display.animated(&options, term_size, img_src);
         } else {
-            display.still(&options, term_size, img_src);
+            let _ = display.still(&options, term_size, img_src);
         }
 
         if file_names.len() > 1 {

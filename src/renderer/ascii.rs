@@ -66,7 +66,7 @@ impl display::TermDisplay for Ascii {
                 Err(_) => continue,
             };
             let delay = u64::from(frame.delay().to_integer());
-            let mut image = frame.into_buffer();
+            let image = frame.into_buffer();
             let image = DynamicImage::ImageRgba8(image.clone());
 
             // Keep aspect ratio, fit in terminal

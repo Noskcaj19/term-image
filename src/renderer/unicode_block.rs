@@ -174,7 +174,7 @@ impl super::display::TermDisplay for UnicodeBlock {
                 Err(_) => continue,
             };
             let delay = u64::from(frame.delay().to_integer());
-            let mut image = frame.into_buffer();
+            let image = frame.into_buffer();
             let image = DynamicImage::ImageRgba8(image.clone());
 
             let mut image = utils::resize_image(&image, (4, 8), term_size);
@@ -184,7 +184,7 @@ impl super::display::TermDisplay for UnicodeBlock {
             for y in (0..image.height()).step_by(8) {
                 let mut inner = Vec::new();
                 for x in (0..image.width()).step_by(4) {
-                    let mut sub_img = image.sub_image(x, y, 4, 8);
+                    let sub_img = image.sub_image(x, y, 4, 8);
                     inner.push(process_block(&sub_img, &bitmap, options.blend));
                 }
                 img_data.push(inner);
@@ -232,7 +232,7 @@ impl super::display::TermDisplay for UnicodeBlock {
 
         for y in (0..img.height()).step_by(8) {
             for x in (0..img.width()).step_by(4) {
-                let mut sub_img = img.sub_image(x, y, 4, 8);
+                let sub_img = img.sub_image(x, y, 4, 8);
                 let block = process_block(&sub_img, &bitmap, options.blend);
 
                 block.print(options.truecolor, &mut stdout);

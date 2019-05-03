@@ -2,6 +2,7 @@ use image;
 use image::AnimationDecoder;
 
 use std::fs::File;
+use std::io::{stdin, Read};
 
 use crate::options::Options;
 
@@ -30,7 +31,6 @@ impl ImageSource {
         }
 
         self.image = if self.path == "-" {
-            use std::io::{stdin, Read};
             let mut buf = Vec::new();
             stdin().read_to_end(&mut buf).ok()?;
             image::load_from_memory(&buf).ok()
@@ -44,9 +44,7 @@ impl ImageSource {
     pub fn frames(&mut self) -> Option<image::Frames> {
         // To get frames, we need a gif::Decoder, which
         // takes a type that is Read
-        use image::ImageDecoder;
         if self.path == "-" {
-            use std::io::stdin;
             Some(image::gif::Decoder::new(stdin()).ok()?.into_frames())
         } else {
             let f = File::open(&self.path).expect("File not found");
@@ -56,7 +54,6 @@ impl ImageSource {
     }
 
     pub fn data(&mut self) -> Box<dyn std::io::Read> {
-        use std::io::stdin;
         if self.path == "-" {
             Box::new(stdin())
         } else {
