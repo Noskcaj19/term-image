@@ -8,8 +8,8 @@ use termion;
 use termion::color::{self, Bg, Fg, Rgb};
 
 use super::{display, draw_utils, DrawableCell};
-use options::Options;
-use utils;
+use crate::options::Options;
+use crate::utils;
 
 struct Block {
     ch: char,

@@ -2,7 +2,7 @@ use gif::{Decoder, Encoder};
 use iterm2;
 use std::io::Read;
 
-use options::Options;
+use crate::options::Options;
 
 use super::display;
 

@@ -1,6 +1,6 @@
 use clap::{App, Arg};
-use options::Options;
-use renderer::{CharSet, DrawStyle, MagicType};
+use crate::options::Options;
+use crate::renderer::{CharSet, DrawStyle, MagicType};
 use std::{env, fs::File};
 use termion;
 

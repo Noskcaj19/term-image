@@ -1,4 +1,4 @@
-use renderer::{CharSet, DrawStyle, MagicType};
+use crate::renderer::{CharSet, DrawStyle, MagicType};
 use std::default::Default;
 
 /// Store configuration

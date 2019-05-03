@@ -5,7 +5,7 @@ use image::{DynamicImage, GenericImageView};
 use termion::raw::IntoRawMode;
 
 use super::display;
-use options::Options;
+use crate::options::Options;
 
 const PROTOCOL_START: &[u8] = b"\x1b_G";
 const PROTOCOL_END: &[u8] = b"\x1b\\";

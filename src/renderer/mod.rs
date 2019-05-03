@@ -7,7 +7,7 @@ mod unicode_block;
 mod display;
 mod draw_utils;
 
-use options::Options;
+use crate::options::Options;
 
 use std::io::Write;
 
