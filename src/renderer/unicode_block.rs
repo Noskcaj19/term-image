@@ -169,6 +169,10 @@ impl super::display::TermDisplay for UnicodeBlock {
 
         let mut frame_data = Vec::new();
         for frame in frames {
+            let frame = match frame {
+                Ok(frame) => frame,
+                Err(_) => continue,
+            };
             let delay = u64::from(frame.delay().to_integer());
             let mut image = frame.into_buffer();
             let image = DynamicImage::ImageRgba8(image.clone());

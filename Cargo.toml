@@ -4,7 +4,7 @@ version = "0.1.0"
 authors = ["Noskcaj <kcajdev@gmail.com>"]
 
 [dependencies]
-image = "0.20.1"
+image = "0.21.1"
 termion = "1.5.1"
 clap = "2.32.0"
 failure = "0.1.3"

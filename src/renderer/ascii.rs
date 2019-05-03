@@ -61,6 +61,10 @@ impl display::TermDisplay for Ascii {
         let mut stdout = stdout.lock();
         let mut frame_data = Vec::new();
         for frame in img_src.frames().ok_or(())? {
+            let frame = match frame {
+                Ok(frame) => frame,
+                Err(_) => continue,
+            };
             let delay = u64::from(frame.delay().to_integer());
             let mut image = frame.into_buffer();
             let image = DynamicImage::ImageRgba8(image.clone());

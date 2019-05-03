@@ -1,4 +1,5 @@
 use image;
+use image::AnimationDecoder;
 
 use std::fs::File;
 
@@ -46,11 +47,11 @@ impl ImageSource {
         use image::ImageDecoder;
         if self.path == "-" {
             use std::io::stdin;
-            image::gif::Decoder::new(stdin()).into_frames().ok()
+            Some(image::gif::Decoder::new(stdin()).ok()?.into_frames())
         } else {
             let f = File::open(&self.path).expect("File not found");
 
-            image::gif::Decoder::new(f).into_frames().ok()
+            Some(image::gif::Decoder::new(f).ok()?.into_frames())
         }
     }
 
