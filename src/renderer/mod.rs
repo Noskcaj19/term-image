@@ -55,7 +55,7 @@ trait DrawableCell {
 pub fn render_image(options: &Options, term_size: (u16, u16)) {
     let file_names = &options.file_names.clone().unwrap();
     for file_name in file_names {
-        let display: Box<display::TermDisplay> = match options.draw_style {
+        let display: Box<dyn display::TermDisplay> = match options.draw_style {
             DrawStyle::Ascii => Box::new(ascii::Ascii),
             DrawStyle::Braille => Box::new(braille::Braille),
             DrawStyle::UnicodeBlock => Box::new(unicode_block::UnicodeBlock),
