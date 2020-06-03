@@ -1,0 +1,57 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+      fail-fast: false
+
+    steps:
+    - name: Display Rust and Cargo versions
+      run: |
+        rustc -Vv
+        cargo -V
+
+    - uses: actions/checkout@v2
+
+    - name: Cache cargo build
+      uses: actions/cache@v2
+      with:
+        path: target
+        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+    - name: Install musl rust
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt install musl-tools
+        rustup target add x86_64-unknown-linux-musl
+
+    - name: Build binaries
+      if: runner.os == 'Linux'
+      run: |
+        cargo build --release --target=x86_64-unknown-linux-musl
+        ls target
+        ls target/*
+        ls target/x86_64-unknown-linux-musl/release/
+        ls target/release/
+
+    - name: Build binaries
+      if: runner.os == 'macOS'
+      run: cargo build --release
+
+    - uses: actions/upload-artifact@v2
+      if: runner.os == 'Linux'
+      with:
+        name: term-image-linux-musl-x86-64
+        path: target/x86_64-unknown-linux-musl/release/term-image
+
+    - uses: actions/upload-artifact@v2
+      if: runner.os == 'macOS'
+      with:
+        name: term-image-macos
+        path: target/release/term-image
