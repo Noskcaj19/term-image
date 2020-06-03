@@ -205,11 +205,11 @@ impl super::display::TermDisplay for UnicodeBlock {
                     for block in line {
                         block.print(options.truecolor, &mut stdout);
                     }
-                    let _ = write!(stdout, "{}{}", Fg(color::Reset), Bg(color::Reset));
+                    let _ = writeln!(stdout, "{}{}", Fg(color::Reset), Bg(color::Reset));
                 }
                 thread::sleep(Duration::from_millis(*delay));
                 if term.load(Ordering::Relaxed) {
-                    let _ = write!(stdout, "{}", termion::cursor::Show);
+                    let _ = writeln!(stdout, "{}", termion::cursor::Show);
                     break 'gif;
                 }
             }
