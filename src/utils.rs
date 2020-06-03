@@ -1,7 +1,8 @@
-use image::{DynamicImage, FilterType, GenericImageView};
+use image::{DynamicImage,  GenericImageView};
 use libc;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
+use image::imageops::FilterType;
 
 /// Returns the closest multiple of a base
 pub fn closest_mult(x: u32, base: u32) -> u32 {

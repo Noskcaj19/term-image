@@ -4,13 +4,14 @@ use std::io::{stdout, Write};
 use std::thread;
 use std::time::Duration;
 
-use image::{DynamicImage, FilterType, GenericImageView};
+use image::{DynamicImage,  GenericImageView};
 use termion;
 use termion::color::{self, Bg, Fg, Rgb};
 
 use super::{display, draw_utils, DrawableCell};
 use crate::options::Options;
 use crate::utils;
+use image::imageops::FilterType;
 
 struct Block {
     ch: char,
@@ -65,7 +66,7 @@ impl display::TermDisplay for Ascii {
                 Ok(frame) => frame,
                 Err(_) => continue,
             };
-            let delay = u64::from(frame.delay().to_integer());
+            let delay =  Duration::from(frame.delay()).as_millis() as u64;
             let image = frame.into_buffer();
             let image = DynamicImage::ImageRgba8(image.clone());
 

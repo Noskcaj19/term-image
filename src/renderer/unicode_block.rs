@@ -173,7 +173,7 @@ impl super::display::TermDisplay for UnicodeBlock {
                 Ok(frame) => frame,
                 Err(_) => continue,
             };
-            let delay = u64::from(frame.delay().to_integer());
+            let delay =  Duration::from(frame.delay()).as_millis() as u64;
             let image = frame.into_buffer();
             let image = DynamicImage::ImageRgba8(image.clone());
 

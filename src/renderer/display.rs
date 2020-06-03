@@ -1,10 +1,11 @@
 use image;
-use image::AnimationDecoder;
 
 use std::fs::File;
 use std::io::{stdin, Read};
 
 use crate::options::Options;
+use image::gif::GifDecoder;
+use image::AnimationDecoder;
 
 pub type Result<E> = std::result::Result<(), E>;
 
@@ -45,11 +46,11 @@ impl ImageSource {
         // To get frames, we need a gif::Decoder, which
         // takes a type that is Read
         if self.path == "-" {
-            Some(image::gif::Decoder::new(stdin()).ok()?.into_frames())
+            Some(GifDecoder::new(stdin()).ok()?.into_frames())
         } else {
             let f = File::open(&self.path).expect("File not found");
 
-            Some(image::gif::Decoder::new(f).ok()?.into_frames())
+            Some(GifDecoder::new(f).ok()?.into_frames())
         }
     }
 

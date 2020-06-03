@@ -20,7 +20,7 @@ pub fn premultiply(p: Rgba<u8>) -> Rgba<u8> {
     let alpha = f32::from(p[3]) / 255.;
     let bg = 0.;
 
-    for pixel in p.data.iter_mut() {
+    for pixel in p.0.iter_mut() {
         *pixel = (((1. - alpha) * bg) + (alpha * f32::from(*pixel))) as u8
     }
 
