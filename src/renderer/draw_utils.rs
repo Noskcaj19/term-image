@@ -1,4 +1,4 @@
-use image::Rgba;
+use image::{Rgb, Rgba};
 use termion::color;
 
 /// Convert full color rgb to 256 color
@@ -10,7 +10,7 @@ pub fn rgb_to_ansi(color: color::Rgb) -> color::AnsiValue {
 }
 
 /// Perform alpha premuliplication on a Rgba pixel to remove the alpha
-pub fn premultiply(p: Rgba<u8>) -> Rgba<u8> {
+pub fn premultiply(p: Rgba<u8>, bg: Rgb<u8>) -> Rgba<u8> {
     if p[3] == 255 {
         // No transparency
         return p;
@@ -18,10 +18,10 @@ pub fn premultiply(p: Rgba<u8>) -> Rgba<u8> {
 
     let mut p = p;
     let alpha = f32::from(p[3]) / 255.;
-    let bg = 0.;
 
-    for pixel in p.0.iter_mut() {
-        *pixel = (((1. - alpha) * bg) + (alpha * f32::from(*pixel))) as u8
+    // eprintln!("{:#?}", bg);
+    for (subpixel, bg) in p.0.iter_mut().zip(bg.0.iter().map(|s| f32::from(*s))) {
+        *subpixel = (((1. - alpha) * bg) + (alpha * f32::from(*subpixel))) as u8
     }
 
     p

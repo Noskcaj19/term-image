@@ -4,7 +4,7 @@ use std::io::{stdout, Write};
 use std::thread;
 use std::time::Duration;
 
-use image::{DynamicImage,  GenericImageView};
+use image::{DynamicImage, GenericImageView};
 use termion;
 use termion::color::{self, Bg, Fg, Rgb};
 
@@ -66,7 +66,7 @@ impl display::TermDisplay for Ascii {
                 Ok(frame) => frame,
                 Err(_) => continue,
             };
-            let delay =  Duration::from(frame.delay()).as_millis() as u64;
+            let delay = Duration::from(frame.delay()).as_millis() as u64;
             let image = frame.into_buffer();
             let image = DynamicImage::ImageRgba8(image.clone());
 
@@ -92,7 +92,7 @@ impl display::TermDisplay for Ascii {
                     let mut block = best_char(mono_pixel[0], &FONT);
 
                     let pixel = image.get_pixel(x, y);
-                    let pixel = draw_utils::premultiply(pixel);
+                    let pixel = draw_utils::premultiply(pixel, options.background_color);
                     block.fg = Some(Fg(Rgb(pixel[0], pixel[1], pixel[2])));
 
                     inner.push(block);
@@ -151,7 +151,7 @@ impl display::TermDisplay for Ascii {
                 let mono_pixel = mono.get_pixel(x, y);
                 let mut block = best_char(mono_pixel[0], &FONT);
                 let pixel = img.get_pixel(x, y);
-                let pixel = draw_utils::premultiply(pixel);
+                let pixel = draw_utils::premultiply(pixel, options.background_color);
                 block.fg = Some(Fg(Rgb(pixel[0], pixel[1], pixel[2])));
 
                 block.print(options.truecolor, &mut stdout);

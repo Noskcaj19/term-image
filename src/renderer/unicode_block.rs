@@ -39,13 +39,14 @@ fn process_block(
     sub_img: &impl GenericImage<Pixel = Rgba<u8>>,
     bitmaps: &[(u32, char)],
     blend: bool,
+    bg_premultiply_color: image::Rgb<u8>,
 ) -> Block {
     // Determine the best color
     // First, determine the best color range
     let mut max = [0u8; 3];
     let mut min = [255u8; 3];
     for (_, _, p) in sub_img.pixels() {
-        let p = draw_utils::premultiply(p);
+        let p = draw_utils::premultiply(p, bg_premultiply_color);
         for i in 0..3 {
             max[i] = max[i].max(p[i]);
             min[i] = min[i].min(p[i]);
@@ -75,7 +76,7 @@ fn process_block(
         for x in 0..sub_img.width() {
             bits <<= 1;
             let pixel = sub_img.get_pixel(x, y);
-            let pixel = draw_utils::premultiply(pixel);
+            let pixel = draw_utils::premultiply(pixel, bg_premultiply_color);
             if pixel[split_index] > split_value {
                 bits |= 1;
                 fg_count += 1;
@@ -173,7 +174,7 @@ impl super::display::TermDisplay for UnicodeBlock {
                 Ok(frame) => frame,
                 Err(_) => continue,
             };
-            let delay =  Duration::from(frame.delay()).as_millis() as u64;
+            let delay = Duration::from(frame.delay()).as_millis() as u64;
             let image = frame.into_buffer();
             let image = DynamicImage::ImageRgba8(image.clone());
 
@@ -185,7 +186,12 @@ impl super::display::TermDisplay for UnicodeBlock {
                 let mut inner = Vec::new();
                 for x in (0..image.width()).step_by(4) {
                     let sub_img = image.sub_image(x, y, 4, 8);
-                    inner.push(process_block(&sub_img, &bitmap, options.blend));
+                    inner.push(process_block(
+                        &sub_img,
+                        &bitmap,
+                        options.blend,
+                        options.background_color,
+                    ));
                 }
                 img_data.push(inner);
             }
@@ -233,7 +239,8 @@ impl super::display::TermDisplay for UnicodeBlock {
         for y in (0..img.height()).step_by(8) {
             for x in (0..img.width()).step_by(4) {
                 let sub_img = img.sub_image(x, y, 4, 8);
-                let block = process_block(&sub_img, &bitmap, options.blend);
+                let block =
+                    process_block(&sub_img, &bitmap, options.blend, options.background_color);
 
                 block.print(options.truecolor, &mut stdout);
             }

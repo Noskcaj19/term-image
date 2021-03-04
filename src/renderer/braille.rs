@@ -43,6 +43,7 @@ fn slice_to_braille(data: &[u8]) -> char {
 fn process_block(
     sub_img: &impl GenericImage<Pixel = Rgba<u8>>,
     sub_mono_img: &impl GenericImage<Pixel = Luma<u8>>,
+    bg_premultiply_color: image::Rgb<u8>,
 ) -> Block {
     let mut data = [0; 8];
     // Map each mono pixel to a single braille dot
@@ -55,7 +56,7 @@ fn process_block(
     let mut max = [0u8; 3];
     let mut min = [255u8; 3];
     for (_, _, p) in sub_img.pixels() {
-        let p = draw_utils::premultiply(p);
+        let p = draw_utils::premultiply(p, bg_premultiply_color);
         for i in 0..3 {
             max[i] = max[i].max(p[i]);
             min[i] = min[i].min(p[i]);
@@ -81,7 +82,7 @@ fn process_block(
     for y in 0..sub_img.height() {
         for x in 0..sub_img.width() {
             let pixel = sub_img.get_pixel(x, y);
-            let pixel = draw_utils::premultiply(pixel);
+            let pixel = draw_utils::premultiply(pixel, bg_premultiply_color);
             if pixel[split_index] > split_value {
                 fg_count += 1;
                 for i in 0..3 {
@@ -122,7 +123,7 @@ impl display::TermDisplay for Braille {
                 Ok(frame) => frame,
                 Err(_) => continue,
             };
-            let delay =  Duration::from(frame.delay()).as_millis() as u64;
+            let delay = Duration::from(frame.delay()).as_millis() as u64;
             let image = frame.into_buffer();
             let image = DynamicImage::ImageRgba8(image.clone());
 
@@ -141,7 +142,11 @@ impl display::TermDisplay for Braille {
                 for x in (0..image.width()).step_by(2) {
                     let sub_img = image.sub_image(x, y, 2, 4);
                     let sub_mono_img = mono.sub_image(x, y, 2, 4);
-                    inner.push(process_block(&sub_img, &sub_mono_img));
+                    inner.push(process_block(
+                        &sub_img,
+                        &sub_mono_img,
+                        options.background_color,
+                    ));
                 }
                 img_data.push(inner);
             }
@@ -194,7 +199,7 @@ impl display::TermDisplay for Braille {
                 let sub_img = img.sub_image(x, y, 2, 4);
                 let sub_mono_img = mono.sub_image(x, y, 2, 4);
 
-                let block = process_block(&sub_img, &sub_mono_img);
+                let block = process_block(&sub_img, &sub_mono_img, options.background_color);
                 block.print(options.truecolor, &mut stdout);
             }
             let _ = writeln!(stdout);

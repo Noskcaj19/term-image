@@ -1,4 +1,5 @@
 use crate::renderer::{CharSet, DrawStyle, MagicType};
+use image::Rgb;
 use std::default::Default;
 
 /// Store configuration
@@ -13,6 +14,8 @@ pub struct Options {
     // Display
     pub truecolor: bool,
     pub draw_style: DrawStyle,
+    // Transparency
+    pub background_color: Rgb<u8>,
     // Unicode block
     pub char_set: CharSet,
     pub blend: bool,
@@ -30,6 +33,7 @@ impl Options {
             magic_type: None,
             truecolor: false,
             draw_style: DrawStyle::Magic,
+            background_color: [0, 0, 0].into(),
             char_set: Default::default(),
             blend: true,
             animated: true,

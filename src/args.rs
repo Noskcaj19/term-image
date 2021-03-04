@@ -1,6 +1,7 @@
-use clap::{App, Arg};
 use crate::options::Options;
 use crate::renderer::{CharSet, DrawStyle, MagicType};
+use clap::{App, Arg};
+use image::Rgb;
 use std::{env, fs::File};
 use termion;
 
@@ -86,6 +87,13 @@ pub fn get_options() -> Options {
                 .help("Display mode"),
         )
         .arg(
+            Arg::with_name("background_color")
+                .long("bg")
+                .takes_value(true)
+                .help("Comma seperated rgb value to use when rendering transparency")
+                .validator(rgb_triplet),
+        )
+        .arg(
             Arg::with_name("file_names")
                 .required(true)
                 .multiple(true)
@@ -110,6 +118,12 @@ pub fn get_options() -> Options {
         .value_of("height")
         .map(str::to_string)
         .and_then(|h| h.parse().ok());
+    if let Some(bg_color) = matches
+        .value_of("background_color")
+        .and_then(parse_rgb_triplet)
+    {
+        options.background_color = bg_color;
+    }
 
     if matches.is_present("no_slopes") {
         options.char_set = CharSet::NoSlopes;
@@ -157,4 +171,18 @@ pub fn get_options() -> Options {
     }
 
     options
+}
+
+fn parse_rgb_triplet(v: &str) -> Option<Rgb<u8>> {
+    let mut parts = v.split(",").map(str::parse).flatten();
+
+    Some([parts.next()?, parts.next()?, parts.next()?].into())
+}
+
+fn rgb_triplet(v: String) -> Result<(), String> {
+    if let Some(_) = parse_rgb_triplet(&v) {
+        Ok(())
+    } else {
+        Err("background color not in R,G,B format".into())
+    }
 }
