@@ -1,16 +1,25 @@
 [package]
-name = "term-image"
+name = "term-image-cli"
 version = "0.1.0"
 authors = ["Noskcaj <kcajdev@gmail.com>"]
 edition = "2018"
 
+[[bin]]
+name = "term-image"
+path = "src/main.rs"
+
+[workspace]
+members = ["term-image"]
+
 [dependencies]
-image = "0.23.4"
-termion = "1.5.5"
-clap = "2.33.1"
-failure = "0.1.8"
-iterm2 = "0.2.1"
-gif = "0.10.3"
-signal-hook = "0.1.15"
-libc = "0.2.71"
-base64 = "0.12.1"
+crossterm = "0.19.0"
+image = "0.23.14"
+term-image = { path = "term-image", features = ["term-writer"] }
+signal-hook = "0.3.6"
+base64 = "0.13.0"
+itertools = "0.10.0"
+
+[dependencies.clap]
+version = "3.0.0-beta.2"
+default-features = false
+features = [ "std", "suggestions", "color" ]

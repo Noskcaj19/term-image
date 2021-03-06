@@ -33,6 +33,15 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "base64"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b25d992356d2eb0ed82172f5248873db5560c4721f564b13cb5193bda5e668e"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
+name = "base64"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
@@ -51,9 +60,9 @@ checksum = "bed57e2090563b83ba8f83366628ce535a7584c9afa4c9fc0612a03925c6df58"
 
 [[package]]
 name = "byteorder"
-version = "1.4.3"
+version = "1.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
+checksum = "ae44d1a3d5a19df61dd0c8beb138458ac2a53a7ac09eba97d55592540004306b"
 
 [[package]]
 name = "cfg-if"
@@ -76,6 +85,19 @@ dependencies = [
  "textwrap",
  "unicode-width",
  "vec_map",
+]
+
+[[package]]
+name = "cli"
+version = "0.1.0"
+dependencies = [
+ "base64 0.13.0",
+ "clap",
+ "crossterm",
+ "image",
+ "itertools",
+ "signal-hook 0.3.6",
+ "term-image",
 ]
 
 [[package]]
@@ -225,9 +247,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "1.6.2"
+version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "824845a0bf897a9042383849b02c1bc219c2383772efcd5c6f9766fa4b81aef3"
+checksum = "4fb1fa934250de4de8aef298d81c729a7d33d8c239daa3a7575e6b92bfc7313b"
 dependencies = [
  "autocfg",
  "hashbrown",
@@ -245,9 +267,9 @@ dependencies = [
 [[package]]
 name = "iterm2"
 version = "0.3.0"
-source = "git+https://github.com/Noskcaj19/iterm2?rev=a2a7060#a2a7060a9ff6f544e4cb0533db0c249b9b30226b"
+source = "git+https://github.com/Noskcaj19/iterm2?rev=a4030c8#a4030c8f4114a52877738e6bf20bff52f70648a8"
 dependencies = [
- "base64",
+ "base64 0.10.1",
 ]
 
 [[package]]
@@ -276,9 +298,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.88"
+version = "0.2.87"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "03b07a082330a35e43f63177cc01689da34fbffa0105e1246cf0311472cac73a"
+checksum = "265d751d31d6780a3f956bb5b8022feba2d94eeee5a84ba64f4212eedca42213"
 
 [[package]]
 name = "lock_api"
@@ -555,25 +577,12 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 name = "term-image"
 version = "0.1.0"
 dependencies = [
- "base64",
+ "base64 0.13.0",
  "crossterm",
  "gif",
  "image",
  "iterm2",
  "itertools",
-]
-
-[[package]]
-name = "term-image-cli"
-version = "0.1.0"
-dependencies = [
- "base64",
- "clap",
- "crossterm",
- "image",
- "itertools",
- "signal-hook 0.3.6",
- "term-image",
 ]
 
 [[package]]
