@@ -1,6 +1,3 @@
-#[cfg(feature = "term-writer")]
-use std::io::Write;
-
 use image::{imageops::FilterType, DynamicImage, Rgb as RgbPixel, Rgba};
 
 pub mod ascii;
@@ -8,24 +5,6 @@ pub mod block;
 pub mod braille;
 pub mod iterm;
 pub mod kitty;
-
-/// Print cells to the terminal with ansi 256-color escapes or truecolor (RGB) escapes
-#[cfg(feature = "term-writer")]
-pub trait TermWriter {
-    /// Write cell to `out`, optionally using truecolor
-    fn write(&self, truecolor: bool, out: &mut impl Write) -> crossterm::Result<()> {
-        if truecolor {
-            self.write_truecolor(out)
-        } else {
-            self.write_256(out)
-        }
-    }
-
-    /// Write cell to `out`, using truecolor.  Note that not all temrinals support truecolor
-    fn write_truecolor(&self, out: &mut impl Write) -> crossterm::Result<()>;
-    /// Write cell to `out`, using 256 color
-    fn write_256(&self, out: &mut impl Write) -> crossterm::Result<()>;
-}
 
 /// Returns the closest multiple of a base
 pub fn closest_mult(x: u32, base: u32) -> u32 {

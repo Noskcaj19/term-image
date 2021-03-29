@@ -11,9 +11,8 @@ use std::{
     },
     time::Duration,
 };
-use term_image::{
-    ascii::Ascii, block::Block, braille::Braille, iterm::Iterm, kitty::Kitty, TermWriter,
-};
+use term_image::{ascii::Ascii, block::Block, braille::Braille, iterm::Iterm, kitty::Kitty};
+use term_image_crossterm::TermWriter;
 
 mod args;
 mod img_src;

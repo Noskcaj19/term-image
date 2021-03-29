@@ -1,13 +1,3 @@
-#[cfg(feature = "term-writer")]
-use super::TermWriter;
-#[cfg(feature = "term-writer")]
-use crossterm::{
-    queue,
-    style::{Color, SetBackgroundColor, SetForegroundColor},
-};
-#[cfg(feature = "term-writer")]
-use std::io::Write;
-
 use super::{premultiply, resize_image, Rgb as TermRgb};
 use image::{Delay, DynamicImage, Frames, GenericImageView, Rgba};
 use itertools::{IntoChunks, Itertools};
@@ -52,29 +42,6 @@ pub struct Cell {
     pub ch: char,
     pub fg: TermRgb,
     pub bg: TermRgb,
-}
-
-#[cfg(feature = "term-writer")]
-impl TermWriter for Cell {
-    fn write_truecolor(&self, out: &mut impl Write) -> crossterm::Result<()> {
-        queue!(
-            out,
-            SetForegroundColor(Color::from(self.fg.0)),
-            SetBackgroundColor(Color::from(self.bg.0))
-        )?;
-        write!(out, "{}", self.ch)?;
-        Ok(())
-    }
-
-    fn write_256(&self, out: &mut impl Write) -> crossterm::Result<()> {
-        queue!(
-            out,
-            SetForegroundColor(Color::AnsiValue(self.fg.as_256().0)),
-            SetBackgroundColor(Color::AnsiValue(self.bg.as_256().0)),
-        )?;
-        write!(out, "{}", self.ch)?;
-        Ok(())
-    }
 }
 
 fn process_block(
@@ -335,10 +302,10 @@ impl<'a> Iterator for CellIter<'a> {
 ///     for c in hex(bitmap)[2:]: print('{:04b}'.format(int(c,16)))
 /// ```
 pub mod bitmaps {
-    #[cfg_attr(feature = "cargo-clippy", allow(clippy::unreadable_literal))]
+    #[allow(clippy::unreadable_literal)]
     pub const HALFS: [(u32, char); 2] = [(0x00000000, ' '), (0x0000ffff, '▄')];
 
-    #[cfg_attr(feature = "cargo-clippy", allow(clippy::unreadable_literal))]
+    #[allow(clippy::unreadable_literal)]
     pub const BLOCKS: [(u32, char); 8] = [
         (0x00000000, ' '),
         (0x0000000f, '▁'),
@@ -350,7 +317,7 @@ pub mod bitmaps {
         (0x0fffffff, '▇'),
     ];
 
-    #[cfg_attr(feature = "cargo-clippy", allow(clippy::unreadable_literal))]
+    #[allow(clippy::unreadable_literal)]
     pub const NO_SLOPES: [(u32, char); 51] = [
         (0x00000000, ' '),
         (0x0000000f, '▁'),
@@ -405,7 +372,7 @@ pub mod bitmaps {
         (0x00066000, '▪'),
     ];
 
-    #[cfg_attr(feature = "cargo-clippy", allow(clippy::unreadable_literal))]
+    #[allow(clippy::unreadable_literal)]
     pub const ALL: [(u32, char); 55] = [
         (0x00000000, ' '),
         (0x0000000f, '▁'),

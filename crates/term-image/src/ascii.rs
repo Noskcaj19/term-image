@@ -1,14 +1,4 @@
 // TODO: Improve image output quality?
-#[cfg(feature = "term-writer")]
-use super::TermWriter;
-#[cfg(feature = "term-writer")]
-use crossterm::{
-    queue,
-    style::{Color, SetForegroundColor},
-};
-#[cfg(feature = "term-writer")]
-use std::io::Write;
-
 use super::{premultiply, resize_image, Rgb as TermRgb};
 use image::{
     imageops::FilterType, Delay, DynamicImage, Frames, GenericImageView, GrayImage, ImageBuffer,
@@ -21,24 +11,6 @@ use std::borrow::Cow;
 pub struct Cell {
     pub ch: char,
     pub fg: TermRgb,
-}
-
-#[cfg(feature = "term-writer")]
-impl TermWriter for Cell {
-    fn write_truecolor(&self, out: &mut impl Write) -> crossterm::Result<()> {
-        queue!(out, SetForegroundColor(Color::from(self.fg.0)))?;
-        write!(out, "{}", self.ch)?;
-        Ok(())
-    }
-
-    fn write_256(&self, out: &mut impl Write) -> crossterm::Result<()> {
-        queue!(
-            out,
-            SetForegroundColor(Color::AnsiValue(self.fg.as_256().0))
-        )?;
-        write!(out, "{}", self.ch)?;
-        Ok(())
-    }
 }
 
 fn best_char(brightness: u8, font: &[(char, u8)]) -> char {

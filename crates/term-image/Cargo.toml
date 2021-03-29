@@ -4,13 +4,8 @@ version = "0.1.0"
 authors = ["Noskcaj <kcajdev@gmail.com>"]
 edition = "2018"
 
-[features]
-term-writer = ["crossterm"]
-
 [dependencies]
-crossterm = { version = "0.19.0", optional = true }
-image = { version = "0.23.14", default-features = false, features = ["gif"] }
-gif = "0.11.1"
+image = { version = "0.23.14", default-features = false }
 base64 = "0.13.0"
 itertools = "0.10.0"
 iterm2 = { git = "https://github.com/Noskcaj19/iterm2", rev = "a2a7060" }

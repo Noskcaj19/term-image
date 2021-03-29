@@ -1,0 +1,20 @@
+[package]
+name = "term-image-cli"
+version = "0.1.0"
+authors = ["Noskcaj <kcajdev@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+term-image = { path = "../term-image" }
+term-image-crossterm = { path = "../term-image-crossterm" }
+
+crossterm = "0.19.0"
+image = "0.23.14"
+signal-hook = "0.3.7"
+base64 = "0.13.0"
+itertools = "0.10.0"
+
+[dependencies.clap]
+version = "3.0.0-beta.2"
+default-features = false
+features = [ "std", "suggestions", "color" ]
