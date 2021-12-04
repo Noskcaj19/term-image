@@ -55,7 +55,6 @@ fn premultiply(p: Rgba<u8>, bg: RgbPixel<u8>) -> Rgba<u8> {
     let mut p = p;
     let alpha = f32::from(p[3]) / 255.;
 
-    // eprintln!("{:#?}", bg);
     for (subpixel, bg) in p.0.iter_mut().zip(bg.0.iter().map(|s| f32::from(*s))) {
         *subpixel = (((1. - alpha) * bg) + (alpha * f32::from(*subpixel))) as u8
     }
