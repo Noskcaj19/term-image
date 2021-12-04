@@ -3,7 +3,9 @@ use image::{imageops::FilterType, DynamicImage, Rgb as RgbPixel, Rgba};
 pub mod ascii;
 pub mod block;
 pub mod braille;
+#[cfg(feature = "iterm")]
 pub mod iterm;
+#[cfg(feature = "kitty")]
 pub mod kitty;
 
 /// Returns the closest multiple of a base
