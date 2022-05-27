@@ -1,4 +1,4 @@
-use clap::{App, Arg};
+use clap::{Command, Arg};
 use crossterm::tty::IsTty;
 use image::Rgb;
 use std::{env, io::stdout};
@@ -26,7 +26,7 @@ pub enum RendererOption {
 
 /// Parse cli args into Options
 pub fn get_options() -> Options {
-    let matches = App::new("Terminal Image Viewer")
+    let matches = Command::new("Terminal Image Viewer")
         .author("Noskcaj")
         .about("Shows images in your terminal")
         .arg(
@@ -34,45 +34,45 @@ pub fn get_options() -> Options {
                 .long("ansi")
                 .visible_alias("256")
                 .short('a')
-                .about("Use only ansi 256 colors"),
+                .help("Use only ansi 256 colors"),
         )
         .arg(
             Arg::new("force_truecolor")
                 .long("truecolor")
                 .short('t')
-                .about("Force truecolor even in unsupported terminals"),
+                .help("Force truecolor even in unsupported terminals"),
         )
         .arg(
             Arg::new("no_blending")
                 .long("noblend")
                 .short('b')
-                .about("Disable blending characters"),
+                .help("Disable blending characters"),
         )
         .arg(
             Arg::new("all")
                 .long("all")
-                .about("Use all unicode drawing characters")
+                .help("Use all unicode drawing characters")
                 .conflicts_with_all(&["no_slopes", "only_blocks", "only_halfs"])
                 .requires_ifs(&[("block", "renderer"), ("b", "renderer")]),
         )
         .arg(
             Arg::new("no_slopes")
                 .long("no-slopes")
-                .about("Disable sloped unicode characters (if they are wide in your font)")
+                .help("Disable sloped unicode characters (if they are wide in your font)")
                 .conflicts_with_all(&["all", "only_blocks", "only_halfs"])
                 .requires_ifs(&[("block", "renderer"), ("b", "renderer")]),
         )
         .arg(
             Arg::new("only_blocks")
                 .long("blocks")
-                .about("Only use unicode fractional block characters")
+                .help("Only use unicode fractional block characters")
                 .conflicts_with_all(&["all", "no_slopes", "only_halfs"])
                 .requires_ifs(&[("block", "renderer"), ("b", "renderer")]),
         )
         .arg(
             Arg::new("only_halfs")
                 .long("halfs")
-                .about("Only use unicode half blocks")
+                .help("Only use unicode half blocks")
                 .conflicts_with_all(&["all", "no_slopes", "only_blocks"])
                 .requires_ifs(&[("block", "renderer"), ("b", "renderer")]),
         )
@@ -81,26 +81,26 @@ pub fn get_options() -> Options {
                 .long("width")
                 .short('w')
                 .takes_value(true)
-                .about("Override max display width in cells (maintains aspect ratio)"),
+                .help("Override max display width in cells (maintains aspect ratio)"),
         )
         .arg(
             Arg::new("height")
                 .long("height")
                 .short('h')
                 .takes_value(true)
-                .about("Override max display height in cells (maintains aspect ratio)"),
+                .help("Override max display height in cells (maintains aspect ratio)"),
         )
         .arg(
             Arg::new("still")
                 .long("still")
                 .short('s')
-                .about("Don't animate images"),
+                .help("Don't animate images"),
         )
         .arg(
             Arg::new("background_color")
                 .long("bg")
                 .takes_value(true)
-                .about("Comma seperated rgb value to use when rendering transparency")
+                .help("Comma seperated rgb value to use when rendering transparency")
                 .validator(validate_rgb_triplet),
         )
         .arg(
@@ -113,12 +113,12 @@ pub fn get_options() -> Options {
                     "block", "b", "dots", "d", "ascii", "a", "kitty", "k", "iterm", "i",
                     "terminal", "t",
                 ])
-                .about("Renderer to use"),
+                .help("Renderer to use"),
         )
         .arg(
             Arg::new("file_name")
                 .required(true)
-                .about("Input file name, - for stdin"),
+                .help("Input file name, - for stdin"),
         )
         .get_matches();
 

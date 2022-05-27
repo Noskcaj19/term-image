@@ -166,7 +166,7 @@ fn process_at(
     background_color: image::Rgb<u8>,
 ) -> Cell {
     let sub_img = img.view(x * 4, y * 8, 4, 8);
-    process_block(&sub_img, bitmap, blend, background_color)
+    process_block(&*sub_img, bitmap, blend, background_color)
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -236,7 +236,7 @@ impl Block {
 
     /// Render image, resizing to nearest cell width
     pub fn img<'a>(options: &BlockOptions, img: &DynamicImage) -> IntoChunks<CellIter<'a>> {
-        let img = resize_image(&img, (4, 8), options.size);
+        let img = resize_image(img, (4, 8), options.size);
         let block_width = img.width() / 4;
         CellIter {
             img: Cow::Owned(img),

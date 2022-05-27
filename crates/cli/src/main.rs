@@ -103,7 +103,7 @@ fn get_quit_hook() -> Arc<AtomicBool> {
 fn write_still(iter: impl Iterator<Item = impl Iterator<Item = impl TermWriter>>, truecolor: bool) {
     let stdout = std::io::stdout();
     let mut stdout = stdout.lock();
-    for row in iter.into_iter() {
+    for row in iter {
         for block in row {
             let _ = block.write(truecolor, &mut stdout);
         }

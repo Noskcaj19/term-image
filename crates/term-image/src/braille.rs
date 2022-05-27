@@ -96,7 +96,7 @@ fn process_at(
     let sub_img = img.view(x * 2, y * 4, 2, 4);
     let sub_mono_img = mono.view(x * 2, y * 4, 2, 4);
 
-    process_cell(&sub_img, &sub_mono_img, background_color)
+    process_cell(&*sub_img, &*sub_mono_img, background_color)
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
@@ -169,7 +169,7 @@ impl Braille {
         options: &BrailleOptions,
         img: &DynamicImage,
     ) -> IntoChunks<impl Iterator<Item = Cell> + 'a> {
-        let img = resize_image(&img, (2, 4), options.size);
+        let img = resize_image(img, (2, 4), options.size);
         let block_width = img.width() / 2;
 
         let mut mono = img.to_luma8();

@@ -22,12 +22,12 @@ fn print_cmd_payload(out: &mut impl Write, cmds: &[(&str, &str)], payload: &str)
         payload = new_payload;
         out.write_all(PROTOCOL_START)?;
         write!(out, "{},m=1;", cmds)?;
-        out.write_all(&buf)?;
+        out.write_all(buf)?;
         out.write_all(PROTOCOL_END)?;
     }
     out.write_all(PROTOCOL_START)?;
     write!(out, "{},m=0;", cmds)?;
-    out.write_all(&payload)?;
+    out.write_all(payload)?;
     out.write_all(PROTOCOL_END)?;
 
     Ok(())
@@ -53,7 +53,7 @@ fn display_path(out: &mut impl Write, path: &str) -> io::Result<()> {
 }
 
 fn display_image(out: &mut impl Write, img: &DynamicImage, max_size: (u16, u16)) -> io::Result<()> {
-    let img = resize_image(&img, (1, 1), max_size);
+    let img = resize_image(img, (1, 1), max_size);
     let (width, height) = img.dimensions();
     let (data, bits) = match img {
         DynamicImage::ImageRgb8(rgb) => (rgb.to_vec(), 24),
